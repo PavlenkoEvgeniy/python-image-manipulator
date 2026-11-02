@@ -11,7 +11,7 @@ class AppConfig:
     """Application configuration shared by the UI and the pipeline."""
 
     name: str = "Image Manipulator"
-    version: str = "1.0.0"
+    version: str = "1.1.0"
     window_width: int = 1100
     window_height: int = 800
 
@@ -33,6 +33,7 @@ class AppConfig:
     default_height: int = 600
     default_maintain_aspect_ratio: bool = True
     default_add_dimensions_to_filename: bool = True
+    default_rotate_portrait_to_landscape: bool = False
     default_output_format: str = "JPEG"
     default_jpeg_quality: int = 95
     output_formats: Tuple[str, ...] = ("JPEG", "PNG", "WEBP", "BMP")

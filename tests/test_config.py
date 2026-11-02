@@ -28,5 +28,8 @@ class TestDefaults:
     def test_default_output_dir(self):
         assert config.default_output_dir == "processed_images"
 
+    def test_portrait_rotation_is_off_by_default(self):
+        assert config.default_rotate_portrait_to_landscape is False
+
     def test_config_is_an_appconfig(self):
         assert isinstance(AppConfig(), AppConfig)

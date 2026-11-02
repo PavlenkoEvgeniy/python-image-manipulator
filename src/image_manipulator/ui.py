@@ -92,6 +92,9 @@ class ManipulatorApp:
         self.add_dimensions_var = tk.BooleanVar(
             value=config.default_add_dimensions_to_filename
         )
+        self.rotate_portrait_var = tk.BooleanVar(
+            value=config.default_rotate_portrait_to_landscape
+        )
         self.output_format_var = tk.StringVar(value=config.default_output_format)
         self.jpeg_quality_var = tk.StringVar(value=str(config.default_jpeg_quality))
 
@@ -249,8 +252,14 @@ class ManipulatorApp:
             variable=self.add_dimensions_var,
         ).grid(row=2, column=2, columnspan=2, sticky="w", pady=5)
 
+        ttk.Checkbutton(
+            tab,
+            text="Rotate portrait images to landscape (90° clockwise)",
+            variable=self.rotate_portrait_var,
+        ).grid(row=3, column=0, columnspan=4, sticky="w", pady=5)
+
         ttk.Separator(tab, orient="horizontal").grid(
-            row=3, column=0, columnspan=4, sticky="ew", pady=10
+            row=4, column=0, columnspan=4, sticky="ew", pady=10
         )
 
         ttk.Label(
@@ -261,7 +270,7 @@ class ManipulatorApp:
             ),
             foreground="#666666",
             justify="left",
-        ).grid(row=4, column=0, columnspan=4, sticky="w")
+        ).grid(row=5, column=0, columnspan=4, sticky="w")
 
     def _create_text_tab(self, tab: ttk.Frame) -> None:
         """Create the text overlay controls."""
@@ -458,6 +467,7 @@ class ManipulatorApp:
         for var in (
             self.maintain_aspect_var,
             self.add_dimensions_var,
+            self.rotate_portrait_var,
             self.output_format_var,
             self.jpeg_quality_var,
             self.text_var,
@@ -727,6 +737,7 @@ class ManipulatorApp:
             ),
             "maintain_aspect": bool(self.maintain_aspect_var.get()),
             "add_dimensions": bool(self.add_dimensions_var.get()),
+            "rotate_portrait": bool(self.rotate_portrait_var.get()),
             "output_format": self.output_format_var.get(),
             "jpeg_quality": self._int_value(
                 self.jpeg_quality_var, config.default_jpeg_quality,
@@ -763,6 +774,7 @@ class ManipulatorApp:
         self.height_var.set(str(saved["height"]))
         self.maintain_aspect_var.set(saved["maintain_aspect"])
         self.add_dimensions_var.set(saved["add_dimensions"])
+        self.rotate_portrait_var.set(saved["rotate_portrait"])
         self.output_format_var.set(saved["output_format"])
         self.jpeg_quality_var.set(str(saved["jpeg_quality"]))
 
@@ -810,6 +822,7 @@ class ManipulatorApp:
         self.preset_var.set("Custom")
         self.maintain_aspect_var.set(config.default_maintain_aspect_ratio)
         self.add_dimensions_var.set(config.default_add_dimensions_to_filename)
+        self.rotate_portrait_var.set(config.default_rotate_portrait_to_landscape)
         self.output_format_var.set(config.default_output_format)
         self.jpeg_quality_var.set(str(config.default_jpeg_quality))
 
@@ -1020,6 +1033,7 @@ class ManipulatorApp:
                 config.min_dimension, config.max_dimension,
             ),
             maintain_aspect=bool(self.maintain_aspect_var.get()),
+            rotate_portrait_to_landscape=bool(self.rotate_portrait_var.get()),
             output_format=OutputFormat.from_name(self.output_format_var.get()),
             jpeg_quality=self._int_value(
                 self.jpeg_quality_var, config.default_jpeg_quality,

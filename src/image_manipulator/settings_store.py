@@ -46,6 +46,7 @@ def default_settings() -> dict:
         "height": config.default_height,
         "maintain_aspect": config.default_maintain_aspect_ratio,
         "add_dimensions": config.default_add_dimensions_to_filename,
+        "rotate_portrait": config.default_rotate_portrait_to_landscape,
         "output_format": config.default_output_format,
         "jpeg_quality": config.default_jpeg_quality,
         "text": config.default_text,
@@ -105,6 +106,9 @@ def validate_settings(raw: dict) -> dict:
     )
     settings["add_dimensions"] = _bool(
         raw, "add_dimensions", config.default_add_dimensions_to_filename
+    )
+    settings["rotate_portrait"] = _bool(
+        raw, "rotate_portrait", config.default_rotate_portrait_to_landscape
     )
 
     output_format = raw.get("output_format")

@@ -67,6 +67,57 @@ class TestRender:
         assert manipulator.render(image).size == (150, 150)
 
 
+class TestPortraitRotation:
+    """Optional rotation of portrait images to landscape before resizing."""
+
+    def test_rotates_portrait_before_resize(self):
+        image = Image.new("RGB", (200, 400), "red")
+        manipulator = ImageManipulator(
+            target_width=400,
+            target_height=400,
+            rotate_portrait_to_landscape=True,
+        )
+
+        assert manipulator.render(image).size == (400, 200)
+
+    def test_rotation_happens_before_aspect_ratio_calculation(self):
+        image = Image.new("RGB", (200, 400), "red")
+        manipulator = ImageManipulator(
+            target_width=100,
+            target_height=100,
+            rotate_portrait_to_landscape=True,
+        )
+
+        # Rotated 400x200 then scaled by 0.25; without rotation it would be 50x100.
+        assert manipulator.render(image).size == (100, 50)
+
+    def test_landscape_image_is_untouched(self):
+        image = Image.new("RGB", (400, 200), "red")
+        manipulator = ImageManipulator(
+            target_width=200,
+            target_height=200,
+            rotate_portrait_to_landscape=True,
+        )
+
+        assert manipulator.render(image).size == (200, 100)
+
+    def test_square_image_is_untouched(self):
+        image = Image.new("RGB", (300, 300), "red")
+        manipulator = ImageManipulator(
+            target_width=300,
+            target_height=300,
+            rotate_portrait_to_landscape=True,
+        )
+
+        assert manipulator.render(image).size == (300, 300)
+
+    def test_rotation_is_off_by_default(self):
+        image = Image.new("RGB", (200, 400), "red")
+        manipulator = ImageManipulator(target_width=400, target_height=400)
+
+        assert manipulator.render(image).size == (200, 400)
+
+
 class TestProcessPath:
     """Tests for loading from and saving to disk."""
 

@@ -14,6 +14,7 @@ def _full_settings():
             "height": 480,
             "maintain_aspect": False,
             "add_dimensions": False,
+            "rotate_portrait": True,
             "output_format": "PNG",
             "jpeg_quality": 80,
             "text": "Hello",
@@ -61,6 +62,7 @@ class TestValidation:
                 "height": -5,
                 "maintain_aspect": "yes",
                 "add_dimensions": 1,
+                "rotate_portrait": "yes",
                 "output_format": "GIF",
                 "jpeg_quality": 0,
                 "text": 42,
@@ -81,6 +83,10 @@ class TestValidation:
         assert result["height"] == config.min_dimension
         assert result["maintain_aspect"] is config.default_maintain_aspect_ratio
         assert result["add_dimensions"] is config.default_add_dimensions_to_filename
+        assert (
+            result["rotate_portrait"]
+            is config.default_rotate_portrait_to_landscape
+        )
         assert result["output_format"] == config.default_output_format
         assert result["jpeg_quality"] == config.min_jpeg_quality
         assert result["text"] == config.default_text

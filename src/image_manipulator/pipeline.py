@@ -150,6 +150,7 @@ class ImageManipulator:
         target_width: int = config.default_width,
         target_height: int = config.default_height,
         maintain_aspect: bool = config.default_maintain_aspect_ratio,
+        rotate_portrait_to_landscape: bool = config.default_rotate_portrait_to_landscape,
         output_format: OutputFormat = OutputFormat.JPEG,
         jpeg_quality: int = config.default_jpeg_quality,
         add_dimensions_to_filename: bool = config.default_add_dimensions_to_filename,
@@ -158,6 +159,7 @@ class ImageManipulator:
         self.target_width = target_width
         self.target_height = target_height
         self.maintain_aspect = maintain_aspect
+        self.rotate_portrait_to_landscape = rotate_portrait_to_landscape
         self.output_format = output_format
         self.jpeg_quality = jpeg_quality
         self.add_dimensions_to_filename = add_dimensions_to_filename
@@ -170,6 +172,9 @@ class ImageManipulator:
     def render(self, image: Image.Image) -> Image.Image:
         """Produce the final image: resize first, then draw text.
 
+        Portrait images are rotated to landscape before resizing when the
+        corresponding option is enabled.
+
         Args:
             image: Source image.
 
@@ -177,6 +182,9 @@ class ImageManipulator:
             A new image; the source is never modified.
         """
         image = _normalize_mode(image)
+        if self.rotate_portrait_to_landscape and image.height > image.width:
+            # 90° clockwise, so the result is wider than it is tall.
+            image = image.transpose(Image.Transpose.ROTATE_270)
         result = resize_image(
             image,
             self.target_width,
