@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "image-manipulator"
-version = "1.1.0"
+version = "1.2.0"
 description = "Resize images and overlay text in a single pass"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -48,6 +48,9 @@ image-manipulator = "image_manipulator.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+image_manipulator = ["icon.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

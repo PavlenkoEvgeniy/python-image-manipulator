@@ -3,8 +3,11 @@
 import tkinter as tk
 from tkinter import ttk
 
+from PIL import ImageTk
+
 from . import __author__, __email__, __version__
 from .config import config
+from .icon import load_icon_image
 from .positioning import center_over_parent
 
 
@@ -36,9 +39,15 @@ class AboutDialog:
         frame = ttk.Frame(self.window, padding="24")
         frame.pack(fill=tk.BOTH, expand=True)
 
+        try:
+            self._logo = ImageTk.PhotoImage(load_icon_image(96))
+            tk.Label(frame, image=self._logo, borderwidth=0).pack(pady=(0, 4))
+        except Exception:
+            self._logo = None
+
         tk.Label(
             frame,
-            text=f"🖼️ {config.name}",
+            text=config.name,
             font=("Arial", 16, "bold"),
         ).pack(pady=(0, 8))
 

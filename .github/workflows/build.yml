@@ -21,12 +21,15 @@ jobs:
           - os: ubuntu-latest
             build_name: ImageManipulator-linux
             artifact_name: ImageManipulator-linux
+            icon: assets/icon.png
           - os: windows-latest
             build_name: ImageManipulator-windows
             artifact_name: ImageManipulator-windows.exe
+            icon: assets/icon.ico
           - os: macos-latest
             build_name: ImageManipulator-macos
             artifact_name: ImageManipulator-macos
+            icon: assets/icon.icns
 
     steps:
       - name: Checkout code
@@ -50,7 +53,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --windowed --hidden-import=PIL._tkinter_finder --hidden-import=PIL._imagingtk --hidden-import=tkinterdnd2 --hidden-import=screeninfo --name ${{ matrix.build_name }} main.py
+          pyinstaller --onefile --windowed --icon=${{ matrix.icon }} --collect-data=image_manipulator --hidden-import=PIL._tkinter_finder --hidden-import=PIL._imagingtk --hidden-import=tkinterdnd2 --hidden-import=screeninfo --name ${{ matrix.build_name }} main.py
         env:
           PYTHONPATH: src
 

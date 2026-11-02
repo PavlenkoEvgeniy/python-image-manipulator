@@ -18,7 +18,14 @@ run:
 	PYTHONPATH=src python main.py
 
 pyinstaller:
+	@case "$$(uname -s)" in \
+		Darwin) icon=assets/icon.icns ;; \
+		MINGW*|MSYS*|CYGWIN*) icon=assets/icon.ico ;; \
+		*) icon=assets/icon.png ;; \
+	esac; \
 	PYTHONPATH=src pyinstaller --onefile --windowed \
+		--icon=$$icon \
+		--collect-data=image_manipulator \
 		--hidden-import=PIL._tkinter_finder \
 		--hidden-import=PIL._imagingtk \
 		--hidden-import=tkinterdnd2 \

@@ -55,8 +55,10 @@ class ManipulatorApp:
         self._processing = False
         self._applying_preset = False
         self._events: queue.Queue = queue.Queue()
+        self._window_icon = None
 
         self._setup_window()
+        self._set_window_icon()
         self._create_vars()
         self._create_menu()
         self._create_widgets()
@@ -79,6 +81,16 @@ class ManipulatorApp:
         self.root.title(config.name)
         self.root.geometry(f"{config.window_width}x{config.window_height}")
         self.root.minsize(920, 680)
+
+    def _set_window_icon(self) -> None:
+        """Set the window and taskbar icon from the bundled PNG."""
+        try:
+            from .icon import load_icon_image
+
+            self._window_icon = ImageTk.PhotoImage(load_icon_image())
+            self.root.iconphoto(True, self._window_icon)
+        except Exception as e:
+            logger.warning(f"Could not set the window icon: {e}")
 
     def _create_vars(self) -> None:
         """Create Tk variables with default values."""
