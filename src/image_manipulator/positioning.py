@@ -73,12 +73,17 @@ def center_on_screen(
 
 
 def center_over_parent(
+    *,
     window: tk.Wm,
     parent: tk.Wm,
     width: Optional[int] = None,
     height: Optional[int] = None,
 ) -> None:
-    """Position a window centered over its parent window."""
+    """Position a window centered over its parent window.
+
+    Arguments are keyword-only on purpose: swapping the window and its
+    parent moves the main window instead of the dialog.
+    """
     window.update_idletasks()
     w = width if width is not None else window.winfo_reqwidth()
     h = height if height is not None else window.winfo_reqheight()

@@ -27,7 +27,7 @@ class AboutDialog:
         self.window.withdraw()
         self._create_content()
         self.window.deiconify()
-        center_over_parent(parent, self.window)
+        center_over_parent(window=self.window, parent=parent)
         self.window.grab_set()
         self.window.focus_set()
 
@@ -110,7 +110,7 @@ class MessageDialog:
         )
         self.ok_button.pack(pady=(16, 0))
 
-        center_over_parent(self.window, parent)
+        center_over_parent(window=self.window, parent=parent)
 
         self.window.bind("<Return>", lambda event: self.window.destroy())
         self.window.bind("<Escape>", lambda event: self.window.destroy())
