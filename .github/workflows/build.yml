@@ -75,7 +75,10 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          files: |
+            artifacts/ImageManipulator-linux/ImageManipulator-linux
+            artifacts/ImageManipulator-windows.exe/ImageManipulator-windows.exe
+            artifacts/ImageManipulator-macos/ImageManipulator-macos
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
