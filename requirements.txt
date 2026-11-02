@@ -1,0 +1,10 @@
+# Image Manipulator - runtime dependencies
+Pillow>=10.0.0
+
+# Optional runtime dependencies
+tkinterdnd2>=0.3.0
+screeninfo>=0.8.0
+
+# Development dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
