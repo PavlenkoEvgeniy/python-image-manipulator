@@ -25,15 +25,10 @@ single application. Batch-process images in one pass:
 - 📊 **Progress and errors** — processing runs in a background thread with a batch summary
 - 🌍 **Interface languages** — 10 languages, selectable in File → Language
 
-## 🖼️ Screenshots
+## 🖼️ Screenshot
 
 <p align="center">
   <img src="assets/screenshot.png" alt="Image Manipulator" width="1000">
-</p>
-
-<p align="center">
-  <img src="assets/screenshot-ru.png" alt="Russian interface" width="490">
-  <img src="assets/screenshot-languages.png" alt="Language menu" width="490">
 </p>
 
 ## 🔑 Key Behavior
