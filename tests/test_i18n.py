@@ -5,7 +5,19 @@ import string
 from image_manipulator import i18n
 from image_manipulator.config import config
 
-EXPECTED_CODES = ["en", "ru", "es", "fr", "de", "pt_BR", "it", "zh_CN", "ja", "ko"]
+EXPECTED_CODES = [
+    "en",
+    "ru",
+    "es",
+    "fr",
+    "de",
+    "pt_BR",
+    "it",
+    "zh_CN",
+    "ja",
+    "ko",
+    "tl",
+]
 
 
 def _placeholders(text: str) -> set:
@@ -20,7 +32,7 @@ def _placeholders(text: str) -> set:
 class TestLanguages:
     """The supported language set."""
 
-    def test_ten_languages_including_english_and_russian(self):
+    def test_eleven_languages_including_english_and_russian(self):
         assert [language.code for language in i18n.LANGUAGES] == EXPECTED_CODES
 
     def test_native_names_are_unique(self):
@@ -128,6 +140,10 @@ class TestDetection:
     def test_only_simplified_chinese_is_supported(self):
         assert i18n.detect_system_language({"LANG": "zh_CN.UTF-8"}) == "zh_CN"
         assert i18n.detect_system_language({"LANG": "zh_TW.UTF-8"}) == "en"
+
+    def test_tagalog_accepts_both_locale_codes(self):
+        assert i18n.detect_system_language({"LANG": "tl_PH.UTF-8"}) == "tl"
+        assert i18n.detect_system_language({"LANG": "fil_PH.UTF-8"}) == "tl"
 
     def test_unknown_locale_falls_back(self):
         assert i18n.detect_system_language({}) == config.default_language

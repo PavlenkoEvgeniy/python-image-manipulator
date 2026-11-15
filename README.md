@@ -23,7 +23,7 @@ single application. Batch-process images in one pass:
 - 🧭 **Orientation** — EXIF rotation is baked into the pixels before resizing
 - 💽 **Settings persistence** — all settings are restored on the next launch
 - 📊 **Progress and errors** — processing runs in a background thread with a batch summary
-- 🌍 **Interface languages** — 10 languages, selectable in File → Language
+- 🌍 **Interface languages** — 11 languages, selectable in File → Language
 - 🔄 **Update check** — optional daily check for a newer release, with a direct download for your OS
 
 ## 🖼️ Screenshot
@@ -61,7 +61,8 @@ to the output folder in the selected format.
 ## 🌍 Interface Languages
 
 The interface is available in English, Russian, Spanish, French, German,
-Portuguese (Brazil), Italian, Chinese (Simplified), Japanese, and Korean.
+Portuguese (Brazil), Italian, Chinese (Simplified), Japanese, Korean, and
+Tagalog (Filipino).
 Choose a language under **File → Language**; it applies after the application
 is restarted. On the first launch the language is taken from the OS locale and
 falls back to English.
@@ -186,7 +187,7 @@ default while the remaining settings load as-is.
 
 ## ℹ️ About
 
-- **Version:** 1.4.0
+- **Version:** 1.5.0
 - **License:** MIT
 - **Author:** Pavlenko Evgeniy
 - **Email:** [pavlenkoevgeniy85@gmail.com](mailto:pavlenkoevgeniy85@gmail.com)

@@ -29,6 +29,10 @@ The ten languages are English, Russian, Spanish, French, German, Portuguese
 (Brazil), Italian, Chinese (Simplified), Japanese, and Korean — all render
 correctly without complex text shaping.
 
+Update 2026-11-15: Tagalog (`tl`, also matched from the `fil` locale code) was
+added as the eleventh language. The rationale and the shaping constraint are
+unchanged.
+
 ## Consequences
 
 - No external dependency, no `msgfmt`, and no per-OS build tooling.
