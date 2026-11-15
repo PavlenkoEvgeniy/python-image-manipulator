@@ -6,16 +6,20 @@ from image_manipulator import update_checker
 
 ASSETS = [
     {
-        "name": "ImageManipulator-linux",
-        "browser_download_url": "https://example.com/linux",
+        "name": "ImageManipulator-9.0.0-linux-amd64.deb",
+        "browser_download_url": "https://example.com/linux.deb",
     },
     {
-        "name": "ImageManipulator-windows.exe",
-        "browser_download_url": "https://example.com/windows.exe",
+        "name": "ImageManipulator-9.0.0-linux-x86_64.rpm",
+        "browser_download_url": "https://example.com/linux.rpm",
     },
     {
-        "name": "ImageManipulator-macos",
-        "browser_download_url": "https://example.com/macos",
+        "name": "ImageManipulator-9.0.0-windows-setup.exe",
+        "browser_download_url": "https://example.com/windows-setup.exe",
+    },
+    {
+        "name": "ImageManipulator-9.0.0-macos.dmg",
+        "browser_download_url": "https://example.com/macos.dmg",
     },
 ]
 
@@ -53,34 +57,124 @@ class TestDownloadSelection:
         assert update_checker.platform_asset_key("darwin") == "macos"
         assert update_checker.platform_asset_key("linux") == "linux"
 
-    def test_picks_each_platform_asset(self):
+    def test_picks_each_platform_installer(self):
         assert (
             update_checker.pick_download_url(ASSETS, "win32")
-            == "https://example.com/windows.exe"
+            == "https://example.com/windows-setup.exe"
         )
         assert (
             update_checker.pick_download_url(ASSETS, "darwin")
-            == "https://example.com/macos"
+            == "https://example.com/macos.dmg"
         )
         assert (
-            update_checker.pick_download_url(ASSETS, "linux")
-            == "https://example.com/linux"
+            update_checker.pick_download_url(
+                ASSETS, "linux", package_kind="deb"
+            )
+            == "https://example.com/linux.deb"
+        )
+        assert (
+            update_checker.pick_download_url(
+                ASSETS, "linux", package_kind="rpm"
+            )
+            == "https://example.com/linux.rpm"
+        )
+
+    def test_falls_back_to_the_other_linux_package_type(self):
+        only_rpm = [ASSETS[1]]
+
+        assert (
+            update_checker.pick_download_url(
+                only_rpm, "linux", package_kind="deb"
+            )
+            == "https://example.com/linux.rpm"
         )
 
     def test_falls_back_to_the_release_page(self):
         assert (
-            update_checker.pick_download_url([], "linux")
+            update_checker.pick_download_url(
+                [], "linux", package_kind="deb"
+            )
             == update_checker.RELEASES_PAGE
         )
         insecure = [
             {
-                "name": "ImageManipulator-linux",
-                "browser_download_url": "http://insecure/linux",
+                "name": "ImageManipulator-linux.deb",
+                "browser_download_url": "http://insecure/linux.deb",
             }
         ]
         assert (
-            update_checker.pick_download_url(insecure, "linux")
+            update_checker.pick_download_url(
+                insecure, "linux", package_kind="deb"
+            )
             == update_checker.RELEASES_PAGE
+        )
+
+
+class TestLinuxPackageKind:
+    """Linux installers are chosen for the running distribution family."""
+
+    @staticmethod
+    def _os_release(tmp_path, content):
+        path = tmp_path / "os-release"
+        path.write_text(content, encoding="utf-8")
+        return str(path)
+
+    def test_debian_family(self, tmp_path):
+        path = self._os_release(tmp_path, "ID=ubuntu\nID_LIKE=debian\n")
+
+        assert (
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
+            == "deb"
+        )
+
+    def test_rpm_family(self, tmp_path):
+        path = self._os_release(tmp_path, "ID=fedora\n")
+
+        assert (
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
+            == "rpm"
+        )
+
+    def test_id_like_is_honoured(self, tmp_path):
+        path = self._os_release(tmp_path, 'ID=custom\nID_LIKE="rhel centos"\n')
+
+        assert (
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
+            == "rpm"
+        )
+
+    def test_falls_back_to_available_tools(self, tmp_path):
+        path = self._os_release(tmp_path, "")
+
+        assert (
+            update_checker.linux_package_kind(
+                os_release=path,
+                which=lambda name: "/usr/bin/rpm" if name == "rpm" else None,
+            )
+            == "rpm"
+        )
+        assert (
+            update_checker.linux_package_kind(
+                os_release=path,
+                which=lambda name: "/usr/bin/dpkg" if name == "dpkg" else None,
+            )
+            == "deb"
+        )
+
+    def test_defaults_to_deb(self, tmp_path):
+        path = self._os_release(tmp_path, "")
+
+        assert (
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
+            == "deb"
         )
 
 
@@ -89,12 +183,15 @@ class TestReleaseParsing:
 
     def test_newer_release_returns_download_info(self):
         info = update_checker.parse_latest_release(
-            _payload(), platform="linux", current_version="1.4.0"
+            _payload(),
+            platform="linux",
+            current_version="1.4.0",
+            package_kind="deb",
         )
 
         assert info is not None
         assert info.version == "9.0.0"
-        assert info.download_url == "https://example.com/linux"
+        assert info.download_url == "https://example.com/linux.deb"
         assert info.release_url == "https://github.com/release"
 
     def test_same_or_older_release_is_ignored(self):

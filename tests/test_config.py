@@ -33,3 +33,20 @@ class TestDefaults:
 
     def test_config_is_an_appconfig(self):
         assert isinstance(AppConfig(), AppConfig)
+
+
+class TestDefaultOutputDirectory:
+    """Results land in a visible folder on the user's Desktop."""
+
+    def test_desktop_folder_is_preferred(self, tmp_path):
+        desktop = tmp_path / "Desktop"
+        desktop.mkdir()
+
+        result = config.default_output_directory(home=str(tmp_path))
+
+        assert result == str(desktop / "processed_images")
+
+    def test_falls_back_to_home_without_desktop(self, tmp_path):
+        result = config.default_output_directory(home=str(tmp_path))
+
+        assert result == str(tmp_path / "processed_images")

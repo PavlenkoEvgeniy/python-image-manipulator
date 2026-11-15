@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Image Manipulator
+GenericName=Image Processor
+Comment=Resize images and overlay text in a single pass
+Exec=image-manipulator
+Icon=image-manipulator
+Terminal=false
+Categories=Graphics;Utility;
+Keywords=image;resize;text;overlay;
+StartupNotify=true

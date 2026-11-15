@@ -58,6 +58,11 @@ in the output folder, a numeric suffix is added: `photo_800x600_text_1.jpg`.
 the original file and keeps its original format. Otherwise, results are written
 to the output folder in the selected format.
 
+**Output folder:** by default results go to `processed_images` on the Desktop
+(`~/Desktop/processed_images` on Linux and macOS,
+`%USERPROFILE%\Desktop\processed_images` on Windows). If there is no Desktop
+folder, the home directory is used.
+
 ## 🌍 Interface Languages
 
 The interface is available in English, Russian, Spanish, French, German,
@@ -84,6 +89,28 @@ Turn the automatic check off under **Help → Check for Updates Automatically**.
 **Help → Check for Updates…** runs a check on demand. Automatic failures are
 silent; manual failures are reported. The time of the last successful check is
 kept in `update_check.json` next to `settings.json`.
+
+## 📦 Download
+
+Installers are published with every release:
+
+| Platform | Installer | Install |
+|----------|-----------|---------|
+| Debian / Ubuntu | `ImageManipulator-<version>-linux-amd64.deb` | `sudo apt install ./<file>.deb` |
+| Fedora / RHEL / openSUSE | `ImageManipulator-<version>-linux-<arch>.rpm` | `sudo dnf install ./<file>.rpm` or `sudo zypper install ./<file>.rpm` |
+| Windows 10/11 | `ImageManipulator-<version>-windows-setup.exe` | Run the wizard |
+| macOS | `ImageManipulator-<version>-macos.dmg` | Open and drag to Applications |
+
+| Platform | Uninstall |
+|----------|-----------|
+| Debian / Ubuntu | `sudo apt remove image-manipulator` |
+| Fedora / RHEL / openSUSE | `sudo dnf remove image-manipulator` or `sudo zypper remove image-manipulator` |
+| Windows | Settings → Apps → Image Manipulator → Uninstall |
+| macOS | Move Image Manipulator from Applications to the Trash |
+
+The installers are unsigned. Windows SmartScreen and macOS Gatekeeper may warn;
+on macOS, right-click the app and choose **Open** the first time. The
+application itself runs without administrator rights after installation.
 
 ## 📥 Installation
 
@@ -155,7 +182,9 @@ make test
 python -m pytest -v
 ```
 
-## 🔨 Building a Standalone Executable
+## 🔨 Building
+
+Portable executable for the current platform:
 
 ```bash
 make pyinstaller
@@ -164,6 +193,14 @@ make pyinstaller
 The icon is selected automatically by platform: `assets/icon.ico` on Windows,
 `assets/icon.icns` on macOS, and `assets/icon.png` on Linux. The result is
 `dist/ImageManipulator`.
+
+Installers are built by CI (`.github/workflows/build.yml`):
+
+| Platform | Packaging |
+|----------|-----------|
+| Linux | `packaging/linux/build_packages.sh` builds `.deb` and `.rpm` |
+| Windows | `packaging/windows/image-manipulator.iss` (Inno Setup) builds `setup.exe` |
+| macOS | `hdiutil` wraps `Image Manipulator.app` into a `.dmg` |
 
 Regenerate every icon variant (PNG 1024, ICO with sizes 16–256, ICNS, and a
 256 px PNG for the window):
@@ -187,7 +224,7 @@ default while the remaining settings load as-is.
 
 ## ℹ️ About
 
-- **Version:** 1.5.0
+- **Version:** 1.6.0
 - **License:** MIT
 - **Author:** Pavlenko Evgeniy
 - **Email:** [pavlenkoevgeniy85@gmail.com](mailto:pavlenkoevgeniy85@gmail.com)
