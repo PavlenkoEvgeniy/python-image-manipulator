@@ -11,8 +11,9 @@ from typing import Optional
 
 from PIL import Image, ImageTk
 
+from . import __version__
 from .config import config, get_app_dir
-from .dialogs import AboutDialog, ErrorDialog
+from .dialogs import AboutDialog, ErrorDialog, UpdateDialog
 from .i18n import (
     LANGUAGES,
     canonical_enum,
@@ -30,6 +31,12 @@ from .resize import OutputFormat
 from .settings_store import clear_settings, load_settings, save_settings
 from .text_overlay import TextOverlay
 from .uifonts import apply_ui_family
+from .update_checker import (
+    check_for_update,
+    is_check_due,
+    load_last_check,
+    save_last_check,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +83,7 @@ class ManipulatorApp:
         self._save_after_id: Optional[str] = None
         self._processing = False
         self._applying_preset = False
+        self._update_check_running = False
         self._events: queue.Queue = queue.Queue()
         self._window_icon = None
 
@@ -93,6 +101,9 @@ class ManipulatorApp:
         self._poll_events()
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         center_on_screen(self.root, config.window_width, config.window_height)
+        self.root.after(
+            config.update_check_startup_delay_ms, self._maybe_check_updates
+        )
 
         logger.info("UI initialized")
 
@@ -152,6 +163,7 @@ class ManipulatorApp:
 
         # Interface
         self.language_var = tk.StringVar(value=get_language())
+        self.check_updates_var = tk.BooleanVar(value=config.default_check_updates)
 
         # Display
         self.current_name_var = tk.StringVar(value=tr("preview.no_image"))
@@ -195,6 +207,14 @@ class ManipulatorApp:
 
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label=tr("menu.help"), menu=help_menu)
+        help_menu.add_command(
+            label=tr("menu.help.check_updates"), command=self.check_updates_now
+        )
+        help_menu.add_checkbutton(
+            label=tr("menu.help.check_updates_auto"),
+            variable=self.check_updates_var,
+        )
+        help_menu.add_separator()
         help_menu.add_command(label=tr("menu.help.about"), command=self.show_about)
 
     def _on_language_selected(self) -> None:
@@ -558,6 +578,7 @@ class ManipulatorApp:
             self.output_dir_var,
             self.overwrite_var,
             self.language_var,
+            self.check_updates_var,
         ):
             var.trace_add("write", self._on_setting_changed)
 
@@ -814,6 +835,7 @@ class ManipulatorApp:
         """Snapshot every persisted setting from the widgets."""
         return {
             "language": validate_language(self.language_var.get()),
+            "check_updates": bool(self.check_updates_var.get()),
             "width": self._int_value(
                 self.width_var, config.default_width,
                 config.min_dimension, config.max_dimension,
@@ -858,6 +880,7 @@ class ManipulatorApp:
             return
 
         self.language_var.set(validate_language(saved.get("language")))
+        self.check_updates_var.set(saved["check_updates"])
         self.width_var.set(str(saved["width"]))
         self.height_var.set(str(saved["height"]))
         self.maintain_aspect_var.set(saved["maintain_aspect"])
@@ -908,6 +931,7 @@ class ManipulatorApp:
         self.height_var.set(str(config.default_height))
         self.preset_var.set(tr("resize.custom"))
         self.language_var.set(detect_system_language())
+        self.check_updates_var.set(config.default_check_updates)
         self.maintain_aspect_var.set(config.default_maintain_aspect_ratio)
         self.add_dimensions_var.set(config.default_add_dimensions_to_filename)
         self.rotate_portrait_var.set(config.default_rotate_portrait_to_landscape)
@@ -1064,6 +1088,8 @@ class ManipulatorApp:
                     self.status_var.set(event[1])
                 elif event[0] == "complete":
                     self._on_processing_complete(*event[1:])
+                elif event[0] == "update":
+                    self._on_update_result(*event[1:])
         except queue.Empty:
             pass
 
@@ -1198,3 +1224,67 @@ class ManipulatorApp:
     def show_about(self) -> None:
         """Show the About dialog."""
         AboutDialog(self.root)
+
+    # --- Update check ---
+
+    def _maybe_check_updates(self) -> None:
+        """Run the automatic check when enabled and the daily interval elapsed."""
+        if not self.check_updates_var.get():
+            return
+        if not is_check_due(load_last_check()):
+            return
+        self._start_update_check(manual=False)
+
+    def check_updates_now(self) -> None:
+        """Run an update check requested from the menu."""
+        self._start_update_check(manual=True)
+
+    def _start_update_check(self, manual: bool) -> None:
+        """Start a background check; manual checks bypass the daily gate."""
+        if self._update_check_running:
+            return
+        if not manual and not self.check_updates_var.get():
+            return
+        self._update_check_running = True
+        if manual:
+            self.status_var.set(tr("status.checking_updates"))
+        threading.Thread(
+            target=self._update_worker, args=(manual,), daemon=True
+        ).start()
+
+    def _update_worker(self, manual: bool) -> None:
+        """Query GitHub off the UI thread and report through the queue."""
+        try:
+            info = check_for_update()
+        except Exception as exc:
+            logger.info("Update check failed: %s", exc)
+            self._events.put(("update", manual, None, str(exc)))
+            return
+
+        save_last_check()
+        self._events.put(("update", manual, info, None))
+
+    def _on_update_result(self, manual: bool, info, error) -> None:
+        """Show the result on the UI thread; automatic checks stay quiet."""
+        self._update_check_running = False
+        checking_text = tr("status.checking_updates")
+        if manual and self.status_var.get() == checking_text:
+            self.status_var.set(tr("status.ready"))
+
+        if error:
+            if manual:
+                ErrorDialog.show_warning(
+                    tr("dialog.update_failed.title"),
+                    tr("dialog.update_failed.message", error=error),
+                    parent=self.root,
+                )
+            return
+
+        if info is not None:
+            UpdateDialog(self.root, info)
+        elif manual:
+            ErrorDialog.show_info(
+                tr("dialog.update_latest.title"),
+                tr("dialog.update_latest.message", version=__version__),
+                parent=self.root,
+            )

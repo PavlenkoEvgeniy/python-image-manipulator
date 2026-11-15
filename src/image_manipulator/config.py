@@ -11,8 +11,9 @@ class AppConfig:
     """Application configuration shared by the UI and the pipeline."""
 
     name: str = "Image Manipulator"
-    version: str = "1.3.0"
+    version: str = "1.4.0"
     default_language: str = "en"
+    default_check_updates: bool = True
     window_width: int = 1100
     window_height: int = 800
 
@@ -78,6 +79,7 @@ class AppConfig:
     # Debounce delays in milliseconds
     preview_debounce_ms: int = 300
     settings_save_debounce_ms: int = 300
+    update_check_startup_delay_ms: int = 1500
 
     # Fallback system fonts
     system_fonts: Tuple[str, ...] = (

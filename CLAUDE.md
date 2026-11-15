@@ -69,6 +69,9 @@ deliberately independent of Tkinter:
   OS-locale detection, and canonical-token ↔ translated-label mapping for enum
   values. `uifonts.py` applies a language's preferred UI font family to the Tk
   named fonts and to the dialogs' explicit fonts.
+- `update_checker.py` — optional daily check of the latest GitHub release, numeric
+  version comparison, per-OS release-asset selection, and the last-check state file.
+  It is Tk-free and touches the network only when `check_for_update()` is called.
 - `positioning.py` / `dialogs.py` / `icon.py` / `app.py` — monitor-aware centering,
   modal dialogs, icon loading, and application bootstrap.
 
@@ -98,6 +101,10 @@ deliberately independent of Tkinter:
   localized.
 - **No hardcoded user-visible text.** Widgets, menus, statuses, dialogs, file-dialog
   titles and pipeline error messages go through `tr()`. Logs and README stay English.
+- **Network access lives only in `update_checker.py`** and only inside an explicit
+  check call — never at import or while loading settings. The UI runs it in a worker
+  thread and reports through the event queue, so updates never block Tk. Only
+  `https://` release URLs are opened in the browser.
 
 ### Adding a persisted setting
 
@@ -127,6 +134,9 @@ A setting touches several layers:
   rest loads as-is. Autosave is debounced (~300 ms) and flushed on close.
 - The interface language is stored as `language` (e.g. `ru`) and applies after a
   restart. The first launch uses the OS locale, falling back to English.
+- `check_updates` (default `true`) enables the daily automatic update check. The
+  timestamp of the last successful check is state, not a setting: it lives in
+  `update_check.json` next to `settings.json` and a failed check does not update it.
 - `tkinterdnd2` and `screeninfo` are optional: missing drag & drop disables drop
   handlers, and missing monitor detection falls back to the whole virtual screen.
 

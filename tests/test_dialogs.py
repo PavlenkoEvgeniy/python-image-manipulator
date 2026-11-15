@@ -11,7 +11,8 @@ import pytest
 
 tk = pytest.importorskip("tkinter")
 
-from image_manipulator import dialogs  # noqa: E402
+from image_manipulator import dialogs, i18n  # noqa: E402
+from image_manipulator.update_checker import UpdateInfo  # noqa: E402
 
 
 @pytest.fixture
@@ -65,6 +66,27 @@ def test_about_icon_survives_dialog_garbage_collection(root):
 
     live_images = {str(name) for name in root.tk.call("image", "names")}
     assert image_name in live_images, "the logo image was garbage-collected"
+
+
+def test_update_dialog_opens_the_direct_download(root, monkeypatch):
+    i18n.set_language("en")
+    opened = []
+    monkeypatch.setattr(
+        dialogs.webbrowser, "open", lambda url: opened.append(url) or True
+    )
+    info = UpdateInfo(
+        version="9.0.0",
+        download_url="https://example.com/ImageManipulator-linux",
+        release_url="https://example.com/release",
+    )
+
+    dialog = dialogs.UpdateDialog(root, info)
+    root.update_idletasks()
+
+    assert dialog.download_button.cget("text") == "Download"
+    dialog._download()
+
+    assert opened == ["https://example.com/ImageManipulator-linux"]
 
 
 def test_about_icon_failure_is_logged(root, monkeypatch, caplog):

@@ -2,6 +2,7 @@
 
 import logging
 import tkinter as tk
+import webbrowser
 from tkinter import ttk
 
 from PIL import ImageTk
@@ -88,6 +89,71 @@ class AboutDialog:
         ).pack(pady=(0, 14))
 
         ttk.Button(frame, text=tr("about.close"), command=self.window.destroy).pack()
+
+
+class UpdateDialog:
+    """Offer a direct download link for a newer release."""
+
+    def __init__(self, parent: tk.Wm, info) -> None:
+        """Create the update dialog.
+
+        Args:
+            parent: Parent window.
+            info: UpdateInfo describing the newer release.
+        """
+        self.info = info
+        self.window = tk.Toplevel(parent)
+        self.window.title(tr("dialog.update.title"))
+        self.window.resizable(False, False)
+        self.window.transient(parent)
+
+        self.window.withdraw()
+        frame = ttk.Frame(self.window, padding="20")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(
+            frame,
+            text=tr(
+                "dialog.update.message",
+                version=info.version,
+                current=__version__,
+            ),
+            wraplength=420,
+            justify=tk.LEFT,
+        ).pack(anchor=tk.W)
+
+        ttk.Label(
+            frame,
+            text=info.download_url,
+            foreground="#1b6ec2",
+            wraplength=420,
+            justify=tk.LEFT,
+        ).pack(anchor=tk.W, pady=(10, 16))
+
+        buttons = ttk.Frame(frame)
+        buttons.pack(fill=tk.X)
+        self.download_button = ttk.Button(
+            buttons, text=tr("dialog.update.download"), command=self._download
+        )
+        self.download_button.pack(side=tk.LEFT)
+        ttk.Button(
+            buttons, text=tr("dialog.update.later"), command=self.window.destroy
+        ).pack(side=tk.RIGHT)
+
+        self.window.deiconify()
+        center_over_parent(window=self.window, parent=parent)
+        self.window.bind("<Escape>", lambda event: self.window.destroy())
+        self.window.grab_set()
+        self.download_button.focus_set()
+
+    def _download(self) -> None:
+        """Open the platform download in the default browser and close."""
+        url = self.info.download_url
+        if not url.startswith("https://"):
+            url = self.info.release_url
+        if not webbrowser.open(url):
+            logger.warning("Could not open the download page: %s", url)
+        self.window.destroy()
 
 
 class MessageDialog:

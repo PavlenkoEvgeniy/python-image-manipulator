@@ -5,6 +5,7 @@ import pytest
 tk = pytest.importorskip("tkinter")
 
 from image_manipulator import ui  # noqa: E402
+from image_manipulator.update_checker import UpdateInfo  # noqa: E402
 
 
 @pytest.fixture
@@ -47,3 +48,21 @@ def test_snapshot_stores_canonical_enum_tokens(app):
     assert snapshot["position"] == "bottom right"
     assert snapshot["font_style"] == "Bold"
     assert snapshot["language"] == "ru"
+
+
+def test_update_result_opens_the_update_dialog(app, monkeypatch):
+    application, _ = app
+    captured = []
+    monkeypatch.setattr(
+        ui, "UpdateDialog", lambda parent, info: captured.append(info)
+    )
+    info = UpdateInfo(
+        version="9.0.0",
+        download_url="https://example.com/linux",
+        release_url="https://example.com/release",
+    )
+
+    application._on_update_result(False, info, None)
+
+    assert captured == [info]
+    assert application._update_check_running is False

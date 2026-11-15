@@ -44,6 +44,7 @@ def default_settings() -> dict:
     """Return a complete settings mapping with every default value."""
     return {
         "language": config.default_language,
+        "check_updates": config.default_check_updates,
         "width": config.default_width,
         "height": config.default_height,
         "maintain_aspect": config.default_maintain_aspect_ratio,
@@ -177,6 +178,9 @@ def validate_settings(raw: dict) -> dict:
         validate_language(raw["language"])
         if "language" in raw
         else detect_system_language()
+    )
+    settings["check_updates"] = _bool(
+        raw, "check_updates", config.default_check_updates
     )
 
     return settings

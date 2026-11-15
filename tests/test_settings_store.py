@@ -11,6 +11,7 @@ def _full_settings():
     settings.update(
         {
             "language": "ru",
+            "check_updates": False,
             "width": 640,
             "height": 480,
             "maintain_aspect": False,
@@ -60,6 +61,7 @@ class TestValidation:
         result = settings_store.validate_settings(
             {
                 "language": "xx",
+                "check_updates": "yes",
                 "width": "wide",
                 "height": -5,
                 "maintain_aspect": "yes",
@@ -82,6 +84,7 @@ class TestValidation:
         )
 
         assert result["language"] == config.default_language
+        assert result["check_updates"] is config.default_check_updates
         assert result["width"] == config.default_width
         assert result["height"] == config.min_dimension
         assert result["maintain_aspect"] is config.default_maintain_aspect_ratio
@@ -115,6 +118,7 @@ class TestValidation:
         result = settings_store.validate_settings(
             {
                 "language": "ja",
+                "check_updates": True,
                 "width": 1920,
                 "height": 1080,
                 "output_format": "WEBP",
@@ -124,6 +128,7 @@ class TestValidation:
         )
 
         assert result["language"] == "ja"
+        assert result["check_updates"] is True
         assert result["width"] == 1920
         assert result["height"] == 1080
         assert result["output_format"] == "WEBP"
