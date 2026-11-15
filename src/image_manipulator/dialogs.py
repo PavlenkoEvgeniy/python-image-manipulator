@@ -1,5 +1,6 @@
 """UI dialogs for the Image Manipulator application."""
 
+import logging
 import tkinter as tk
 from tkinter import ttk
 
@@ -9,6 +10,8 @@ from . import __author__, __email__, __version__
 from .config import config
 from .icon import load_icon_image
 from .positioning import center_over_parent
+
+logger = logging.getLogger(__name__)
 
 
 class AboutDialog:
@@ -40,10 +43,16 @@ class AboutDialog:
         frame.pack(fill=tk.BOTH, expand=True)
 
         try:
-            self._logo = ImageTk.PhotoImage(load_icon_image(96))
-            tk.Label(frame, image=self._logo, borderwidth=0).pack(pady=(0, 4))
-        except Exception:
-            self._logo = None
+            photo = ImageTk.PhotoImage(load_icon_image(96))
+            # The label, not the dialog, owns the image. Dialog instances are
+            # discarded right after construction, and a PhotoImage referenced
+            # only by them is destroyed by garbage collection: Tk deletes the
+            # image while the label keeps its size, leaving blank space.
+            logo = tk.Label(frame, image=photo, borderwidth=0)
+            logo.image = photo
+            logo.pack(pady=(0, 4))
+        except Exception as exc:
+            logger.warning("Could not load the About dialog icon: %s", exc)
 
         tk.Label(
             frame,

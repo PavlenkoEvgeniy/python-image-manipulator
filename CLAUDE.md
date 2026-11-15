@@ -30,7 +30,8 @@ python -m pytest tests/test_pipeline.py::TestPortraitRotation::test_rotates_port
 
 There is no linter or formatter configured; pytest is the quality gate. Tests must not
 create a Tk root — they run on headless CI. The pure processing modules are what keep
-that possible.
+that possible. A regression test that genuinely needs Tk must skip when Tk cannot start
+(see `tests/test_dialogs.py`).
 
 Build:
 
@@ -80,6 +81,10 @@ deliberately independent of Tkinter:
   the suffix is a known output format.
 - `center_over_parent` takes keyword-only `window` and `parent`. Passing them
   positionally previously moved the main window instead of the dialog.
+- **Tk images need a surviving owner.** A `PhotoImage` referenced only by a short-lived
+  dialog is destroyed when that dialog is garbage-collected: Tk deletes the image while
+  its `Label` keeps the requested size, so the user sees blank space. Assign it to the
+  widget (`label.image = photo`), as `_show_image()` does for the preview canvas.
 - Supported input formats are PNG/JPEG/BMP/GIF/TIFF/WEBP; selectable output formats are
   JPEG/PNG/WEBP/BMP. Overwriting keeps the original format, including GIF/TIFF.
 
