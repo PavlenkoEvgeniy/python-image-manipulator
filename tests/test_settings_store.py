@@ -10,6 +10,7 @@ def _full_settings():
     settings = settings_store.default_settings()
     settings.update(
         {
+            "language": "ru",
             "width": 640,
             "height": 480,
             "maintain_aspect": False,
@@ -58,6 +59,7 @@ class TestValidation:
     def test_invalid_fields_fall_back(self):
         result = settings_store.validate_settings(
             {
+                "language": "xx",
                 "width": "wide",
                 "height": -5,
                 "maintain_aspect": "yes",
@@ -79,6 +81,7 @@ class TestValidation:
             }
         )
 
+        assert result["language"] == config.default_language
         assert result["width"] == config.default_width
         assert result["height"] == config.min_dimension
         assert result["maintain_aspect"] is config.default_maintain_aspect_ratio
@@ -101,9 +104,17 @@ class TestValidation:
         assert result["output_dir"] == ""
         assert result["overwrite"] is False
 
+    def test_missing_language_uses_the_os_locale(self, monkeypatch):
+        monkeypatch.setattr(
+            settings_store, "detect_system_language", lambda: "ru"
+        )
+
+        assert settings_store.validate_settings({})["language"] == "ru"
+
     def test_valid_values_survive(self):
         result = settings_store.validate_settings(
             {
+                "language": "ja",
                 "width": 1920,
                 "height": 1080,
                 "output_format": "WEBP",
@@ -112,6 +123,7 @@ class TestValidation:
             }
         )
 
+        assert result["language"] == "ja"
         assert result["width"] == 1920
         assert result["height"] == 1080
         assert result["output_format"] == "WEBP"

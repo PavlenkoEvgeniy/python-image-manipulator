@@ -23,11 +23,17 @@ single application. Batch-process images in one pass:
 - 🧭 **Orientation** — EXIF rotation is baked into the pixels before resizing
 - 💽 **Settings persistence** — all settings are restored on the next launch
 - 📊 **Progress and errors** — processing runs in a background thread with a batch summary
+- 🌍 **Interface languages** — 10 languages, selectable in File → Language
 
-## 🖼️ Screenshot
+## 🖼️ Screenshots
 
 <p align="center">
   <img src="assets/screenshot.png" alt="Image Manipulator" width="1000">
+</p>
+
+<p align="center">
+  <img src="assets/screenshot-ru.png" alt="Russian interface" width="490">
+  <img src="assets/screenshot-languages.png" alt="Language menu" width="490">
 </p>
 
 ## 🔑 Key Behavior
@@ -55,6 +61,18 @@ in the output folder, a numeric suffix is added: `photo_800x600_text_1.jpg`.
 **Overwriting:** with “Overwrite original files” enabled, the result replaces
 the original file and keeps its original format. Otherwise, results are written
 to the output folder in the selected format.
+
+## 🌍 Interface Languages
+
+The interface is available in English, Russian, Spanish, French, German,
+Portuguese (Brazil), Italian, Chinese (Simplified), Japanese, and Korean.
+Choose a language under **File → Language**; it applies after the application
+is restarted. On the first launch the language is taken from the OS locale and
+falls back to English.
+
+Output filenames and the default output folder stay language-neutral
+(`_text`, `processed_images`). Translations other than English and Russian are
+best-effort drafts and may need native review.
 
 ## 📥 Installation
 
@@ -158,7 +176,7 @@ default while the remaining settings load as-is.
 
 ## ℹ️ About
 
-- **Version:** 1.2.1
+- **Version:** 1.3.0
 - **License:** MIT
 - **Author:** Pavlenko Evgeniy
 - **Email:** [pavlenkoevgeniy85@gmail.com](mailto:pavlenkoevgeniy85@gmail.com)

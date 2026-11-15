@@ -13,11 +13,23 @@ from PIL import Image, ImageTk
 
 from .config import config, get_app_dir
 from .dialogs import AboutDialog, ErrorDialog
+from .i18n import (
+    LANGUAGES,
+    canonical_enum,
+    detect_system_language,
+    get_language,
+    language_info,
+    set_language,
+    tr,
+    translate_enum,
+    validate_language,
+)
 from .pipeline import ImageManipulator, load_image
 from .positioning import center_on_screen
 from .resize import OutputFormat
 from .settings_store import clear_settings, load_settings, save_settings
 from .text_overlay import TextOverlay
+from .uifonts import apply_ui_family
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +57,16 @@ class ManipulatorApp:
         self.root = root
         self.app_dir = get_app_dir()
 
+        # Translation must be active before the first widget or dialog is built.
+        saved_settings = load_settings()
+        language = (
+            validate_language(saved_settings.get("language"))
+            if saved_settings
+            else detect_system_language()
+        )
+        set_language(language)
+        apply_ui_family(self.root, language_info(language).preferred_fonts)
+
         # State
         self.image_paths: list[str] = []
         self.current_index: int = -1
@@ -64,7 +86,7 @@ class ManipulatorApp:
         self._create_widgets()
 
         # Restore Saved settings, then start reacting to future changes.
-        self._apply_saved_settings(load_settings())
+        self._apply_saved_settings(saved_settings)
         self._bind_live_updates()
         self._setup_dnd()
 
@@ -97,7 +119,7 @@ class ManipulatorApp:
         # Resize settings
         self.width_var = tk.StringVar(value=str(config.default_width))
         self.height_var = tk.StringVar(value=str(config.default_height))
-        self.preset_var = tk.StringVar(value="Custom")
+        self.preset_var = tk.StringVar(value=tr("resize.custom"))
         self.maintain_aspect_var = tk.BooleanVar(
             value=config.default_maintain_aspect_ratio
         )
@@ -113,21 +135,28 @@ class ManipulatorApp:
         # Text settings
         self.text_var = tk.StringVar(value=config.default_text)
         self.text_color = config.default_color
-        self.position_var = tk.StringVar(value=config.default_position)
+        self.position_var = tk.StringVar(
+            value=translate_enum("position", config.default_position)
+        )
         self.offset_up_var = tk.StringVar(value=str(config.default_offset_up))
         self.offset_left_var = tk.StringVar(value=str(config.default_offset_left))
         self.font_family_var = tk.StringVar(value=config.default_font_family)
-        self.font_style_var = tk.StringVar(value=config.default_font_style)
+        self.font_style_var = tk.StringVar(
+            value=translate_enum("font_style", config.default_font_style)
+        )
         self.font_size_var = tk.StringVar(value=str(config.default_font_size))
 
         # Output
         self.output_dir_var = tk.StringVar(value=self._default_output_dir())
         self.overwrite_var = tk.BooleanVar(value=False)
 
+        # Interface
+        self.language_var = tk.StringVar(value=get_language())
+
         # Display
-        self.current_name_var = tk.StringVar(value="No image selected")
-        self.output_size_var = tk.StringVar(value="Output size: —")
-        self.status_var = tk.StringVar(value="Ready")
+        self.current_name_var = tk.StringVar(value=tr("preview.no_image"))
+        self.output_size_var = tk.StringVar(value=tr("preview.output_size_empty"))
+        self.status_var = tk.StringVar(value=tr("status.ready"))
 
     def _create_menu(self) -> None:
         """Create the application menu."""
@@ -135,18 +164,47 @@ class ManipulatorApp:
         self.root.config(menu=menubar)
 
         file_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Add Images…", command=self.load_images)
-        file_menu.add_command(label="Remove Selected", command=self.remove_selected)
-        file_menu.add_command(label="Clear List", command=self.clear_images)
+        menubar.add_cascade(label=tr("menu.file"), menu=file_menu)
+        file_menu.add_command(
+            label=tr("menu.file.add_images"), command=self.load_images
+        )
+        file_menu.add_command(
+            label=tr("menu.file.remove_selected"), command=self.remove_selected
+        )
+        file_menu.add_command(
+            label=tr("menu.file.clear_list"), command=self.clear_images
+        )
         file_menu.add_separator()
-        file_menu.add_command(label="Reset Settings", command=self.reset_settings)
+
+        language_menu = tk.Menu(file_menu, tearoff=0)
+        for language in LANGUAGES:
+            language_menu.add_radiobutton(
+                label=language.native_name,
+                variable=self.language_var,
+                value=language.code,
+                command=self._on_language_selected,
+            )
+        file_menu.add_cascade(
+            label=tr("menu.file.language"), menu=language_menu
+        )
+        file_menu.add_command(
+            label=tr("menu.file.reset_settings"), command=self.reset_settings
+        )
         file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self._on_close)
+        file_menu.add_command(label=tr("menu.file.exit"), command=self._on_close)
 
         help_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Help", menu=help_menu)
-        help_menu.add_command(label="About", command=self.show_about)
+        menubar.add_cascade(label=tr("menu.help"), menu=help_menu)
+        help_menu.add_command(label=tr("menu.help.about"), command=self.show_about)
+
+    def _on_language_selected(self) -> None:
+        """Save the chosen language; it applies after the next restart."""
+        self._schedule_settings_save()
+        ErrorDialog.show_info(
+            tr("menu.file.language.restart_title"),
+            tr("menu.file.language.restart_message"),
+            parent=self.root,
+        )
 
     def _create_widgets(self) -> None:
         """Create all UI widgets."""
@@ -164,25 +222,21 @@ class ManipulatorApp:
 
     def _create_load_section(self, parent: ttk.Frame) -> None:
         """Create the image list and buttons."""
-        frame = ttk.LabelFrame(parent, text="Images", padding="8")
+        frame = ttk.LabelFrame(parent, text=tr("section.images"), padding="8")
         frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         frame.columnconfigure(3, weight=1)
 
-        ttk.Button(frame, text="Add Images…", command=self.load_images).grid(
+        ttk.Button(frame, text=tr("menu.file.add_images"), command=self.load_images).grid(
             row=0, column=0, padx=(0, 5)
         )
-        ttk.Button(frame, text="Remove Selected", command=self.remove_selected).grid(
-            row=0, column=1, padx=5
-        )
-        ttk.Button(frame, text="Clear List", command=self.clear_images).grid(
+        ttk.Button(
+            frame, text=tr("menu.file.remove_selected"), command=self.remove_selected
+        ).grid(row=0, column=1, padx=5)
+        ttk.Button(frame, text=tr("menu.file.clear_list"), command=self.clear_images).grid(
             row=0, column=2, padx=5
         )
 
-        hint = (
-            "Drag & drop images anywhere, or use Add Images…"
-            if HAS_DND
-            else "Use Add Images… to load files (install tkinterdnd2 for drag & drop)"
-        )
+        hint = tr("hint.drag_drop") if HAS_DND else tr("hint.no_drag_drop")
         ttk.Label(frame, text=hint, foreground="#666666").grid(
             row=0, column=3, sticky="w", padx=(12, 0)
         )
@@ -210,8 +264,8 @@ class ManipulatorApp:
 
         resize_tab = ttk.Frame(self.notebook, padding=10)
         text_tab = ttk.Frame(self.notebook, padding=10)
-        self.notebook.add(resize_tab, text="Resize")
-        self.notebook.add(text_tab, text="Text")
+        self.notebook.add(resize_tab, text=tr("tab.resize"))
+        self.notebook.add(text_tab, text=tr("tab.text"))
 
         self._create_resize_tab(resize_tab)
         self._create_text_tab(text_tab)
@@ -221,7 +275,9 @@ class ManipulatorApp:
         tab.columnconfigure(1, weight=1)
         tab.columnconfigure(3, weight=1)
 
-        ttk.Label(tab, text="Width (px):").grid(row=0, column=0, sticky="w", pady=5)
+        ttk.Label(tab, text=tr("resize.width")).grid(
+            row=0, column=0, sticky="w", pady=5
+        )
         ttk.Spinbox(
             tab,
             from_=config.min_dimension,
@@ -230,7 +286,7 @@ class ManipulatorApp:
             width=12,
         ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(tab, text="Height (px):").grid(
+        ttk.Label(tab, text=tr("resize.height")).grid(
             row=0, column=2, sticky="w", padx=(16, 0), pady=5
         )
         ttk.Spinbox(
@@ -241,11 +297,17 @@ class ManipulatorApp:
             width=12,
         ).grid(row=0, column=3, sticky="w", padx=5, pady=5)
 
-        ttk.Label(tab, text="Preset:").grid(row=1, column=0, sticky="w", pady=5)
+        ttk.Label(tab, text=tr("resize.preset")).grid(
+            row=1, column=0, sticky="w", pady=5
+        )
+        preset_names = [
+            tr("resize.custom") if name == "Custom" else name
+            for name, _, _ in config.presets
+        ]
         preset_combo = ttk.Combobox(
             tab,
             textvariable=self.preset_var,
-            values=[p[0] for p in config.presets],
+            values=preset_names,
             state="readonly",
             width=14,
         )
@@ -254,19 +316,19 @@ class ManipulatorApp:
 
         ttk.Checkbutton(
             tab,
-            text="Maintain aspect ratio",
+            text=tr("resize.maintain_aspect"),
             variable=self.maintain_aspect_var,
         ).grid(row=2, column=0, columnspan=2, sticky="w", pady=5)
 
         ttk.Checkbutton(
             tab,
-            text="Add size to filename",
+            text=tr("resize.add_size"),
             variable=self.add_dimensions_var,
         ).grid(row=2, column=2, columnspan=2, sticky="w", pady=5)
 
         ttk.Checkbutton(
             tab,
-            text="Rotate portrait images to landscape (90° clockwise)",
+            text=tr("resize.rotate_portrait"),
             variable=self.rotate_portrait_var,
         ).grid(row=3, column=0, columnspan=4, sticky="w", pady=5)
 
@@ -276,10 +338,7 @@ class ManipulatorApp:
 
         ttk.Label(
             tab,
-            text=(
-                "Resizing happens first, then the text is drawn on the\n"
-                "result. Font size is measured in output pixels."
-            ),
+            text=tr("resize.hint"),
             foreground="#666666",
             justify="left",
         ).grid(row=5, column=0, columnspan=4, sticky="w")
@@ -289,12 +348,14 @@ class ManipulatorApp:
         tab.columnconfigure(1, weight=1)
         tab.columnconfigure(3, weight=1)
 
-        ttk.Label(tab, text="Text:").grid(row=0, column=0, sticky="w", pady=5)
+        ttk.Label(tab, text=tr("text.label")).grid(row=0, column=0, sticky="w", pady=5)
         ttk.Entry(tab, textvariable=self.text_var).grid(
             row=0, column=1, columnspan=3, sticky="ew", padx=5, pady=5
         )
 
-        ttk.Label(tab, text="Color:").grid(row=1, column=0, sticky="w", pady=5)
+        ttk.Label(tab, text=tr("text.color")).grid(
+            row=1, column=0, sticky="w", pady=5
+        )
         self.color_preview = tk.Label(
             tab,
             bg=self.text_color,
@@ -304,43 +365,47 @@ class ManipulatorApp:
             bd=2,
         )
         self.color_preview.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        ttk.Button(tab, text="Choose color", command=self.choose_color).grid(
+        ttk.Button(tab, text=tr("text.choose_color"), command=self.choose_color).grid(
             row=1, column=2, columnspan=2, sticky="w", pady=5
         )
 
-        ttk.Label(tab, text="Position:").grid(row=2, column=0, sticky="w", pady=5)
+        ttk.Label(tab, text=tr("text.position")).grid(
+            row=2, column=0, sticky="w", pady=5
+        )
         ttk.Combobox(
             tab,
             textvariable=self.position_var,
-            values=list(config.text_positions),
+            values=[translate_enum("position", value) for value in config.text_positions],
             state="readonly",
             width=16,
         ).grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(tab, text="Font style:").grid(
+        ttk.Label(tab, text=tr("text.font_style")).grid(
             row=2, column=2, sticky="w", padx=(16, 0), pady=5
         )
         ttk.Combobox(
             tab,
             textvariable=self.font_style_var,
-            values=list(config.font_styles),
+            values=[translate_enum("font_style", value) for value in config.font_styles],
             state="readonly",
             width=16,
         ).grid(row=2, column=3, sticky="w", padx=5, pady=5)
 
-        ttk.Label(tab, text="Offset up (px):").grid(row=3, column=0, sticky="w", pady=5)
+        ttk.Label(tab, text=tr("text.offset_up")).grid(
+            row=3, column=0, sticky="w", pady=5
+        )
         ttk.Entry(tab, textvariable=self.offset_up_var, width=12).grid(
             row=3, column=1, sticky="w", padx=5, pady=5
         )
 
-        ttk.Label(tab, text="Offset left (px):").grid(
+        ttk.Label(tab, text=tr("text.offset_left")).grid(
             row=3, column=2, sticky="w", padx=(16, 0), pady=5
         )
         ttk.Entry(tab, textvariable=self.offset_left_var, width=12).grid(
             row=3, column=3, sticky="w", padx=5, pady=5
         )
 
-        ttk.Label(tab, text="Font:").grid(row=4, column=0, sticky="w", pady=5)
+        ttk.Label(tab, text=tr("text.font")).grid(row=4, column=0, sticky="w", pady=5)
         self.font_family_combo = ttk.Combobox(
             tab,
             textvariable=self.font_family_var,
@@ -350,7 +415,7 @@ class ManipulatorApp:
         )
         self.font_family_combo.grid(row=4, column=1, sticky="ew", padx=5, pady=5)
 
-        ttk.Label(tab, text="Font size:").grid(
+        ttk.Label(tab, text=tr("text.font_size")).grid(
             row=4, column=2, sticky="w", padx=(16, 0), pady=5
         )
         ttk.Spinbox(
@@ -361,25 +426,29 @@ class ManipulatorApp:
             width=12,
         ).grid(row=4, column=3, sticky="w", padx=5, pady=5)
 
-        ttk.Label(tab, text="Font file:").grid(row=5, column=0, sticky="w", pady=5)
-        self.font_file_label = ttk.Label(tab, text="System (default)", width=22)
+        ttk.Label(tab, text=tr("text.font_file")).grid(
+            row=5, column=0, sticky="w", pady=5
+        )
+        self.font_file_label = ttk.Label(
+            tab, text=tr("text.system_default"), width=22
+        )
         self.font_file_label.grid(row=5, column=1, sticky="w", padx=5, pady=5)
-        ttk.Button(tab, text="Select font", command=self.choose_font).grid(
+        ttk.Button(tab, text=tr("text.select_font"), command=self.choose_font).grid(
             row=5, column=2, sticky="w", padx=(16, 0), pady=5
         )
-        ttk.Button(tab, text="Use system font", command=self.use_system_font).grid(
-            row=5, column=3, sticky="w", padx=5, pady=5
-        )
+        ttk.Button(
+            tab, text=tr("text.use_system_font"), command=self.use_system_font
+        ).grid(row=5, column=3, sticky="w", padx=5, pady=5)
 
         ttk.Label(
             tab,
-            text="A custom font file takes precedence over the font family.",
+            text=tr("text.hint"),
             foreground="#666666",
         ).grid(row=6, column=0, columnspan=4, sticky="w", pady=(8, 0))
 
     def _create_preview_section(self, parent: ttk.Frame) -> None:
         """Create the preview panel."""
-        frame = ttk.LabelFrame(parent, text="Preview", padding="8")
+        frame = ttk.LabelFrame(parent, text=tr("section.preview"), padding="8")
         frame.grid(row=1, column=1, sticky="nsew")
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(0, weight=1)
@@ -402,22 +471,22 @@ class ManipulatorApp:
 
     def _create_output_section(self, parent: ttk.Frame) -> None:
         """Create output folder and format controls."""
-        frame = ttk.LabelFrame(parent, text="Output", padding="8")
+        frame = ttk.LabelFrame(parent, text=tr("section.output"), padding="8")
         frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(8, 0))
         frame.columnconfigure(1, weight=1)
 
-        ttk.Label(frame, text="Folder:").grid(row=0, column=0, sticky="w")
+        ttk.Label(frame, text=tr("output.folder")).grid(row=0, column=0, sticky="w")
         ttk.Entry(frame, textvariable=self.output_dir_var).grid(
             row=0, column=1, sticky="ew", padx=5
         )
-        ttk.Button(frame, text="Browse", command=self.browse_output_dir).grid(
+        ttk.Button(frame, text=tr("output.browse"), command=self.browse_output_dir).grid(
             row=0, column=2, padx=(5, 0)
         )
 
         options = ttk.Frame(frame)
         options.grid(row=1, column=0, columnspan=3, sticky="w", pady=(8, 0))
 
-        ttk.Label(options, text="Format:").pack(side=tk.LEFT)
+        ttk.Label(options, text=tr("output.format")).pack(side=tk.LEFT)
         ttk.Combobox(
             options,
             textvariable=self.output_format_var,
@@ -426,7 +495,7 @@ class ManipulatorApp:
             width=8,
         ).pack(side=tk.LEFT, padx=(5, 20))
 
-        ttk.Label(options, text="JPEG/WEBP quality:").pack(side=tk.LEFT)
+        ttk.Label(options, text=tr("output.quality")).pack(side=tk.LEFT)
         ttk.Spinbox(
             options,
             from_=config.min_jpeg_quality,
@@ -437,7 +506,7 @@ class ManipulatorApp:
 
         ttk.Checkbutton(
             options,
-            text="Overwrite original files",
+            text=tr("output.overwrite"),
             variable=self.overwrite_var,
         ).pack(side=tk.LEFT)
 
@@ -447,20 +516,17 @@ class ManipulatorApp:
         actions.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(8, 0))
 
         self.process_button = ttk.Button(
-            actions, text="Process All", command=self.start_processing, width=20
+            actions, text=tr("action.process_all"), command=self.start_processing, width=20
         )
         self.process_button.pack(side=tk.LEFT, padx=(0, 5))
 
         ttk.Button(
-            actions, text="Refresh Preview", command=self._refresh_preview
+            actions, text=tr("action.refresh_preview"), command=self._refresh_preview
         ).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(
             actions,
-            text=(
-                "Text is applied after resizing; the result is saved with the "
-                "chosen format."
-            ),
+            text=tr("action.hint"),
             foreground="#666666",
         ).pack(side=tk.LEFT, padx=(16, 0))
 
@@ -491,6 +557,7 @@ class ManipulatorApp:
             self.font_size_var,
             self.output_dir_var,
             self.overwrite_var,
+            self.language_var,
         ):
             var.trace_add("write", self._on_setting_changed)
 
@@ -500,7 +567,7 @@ class ManipulatorApp:
     def _on_dimension_changed(self, *_args) -> None:
         """Mark the preset as custom when width or height is edited."""
         if not self._applying_preset:
-            self.preset_var.set("Custom")
+            self.preset_var.set(tr("resize.custom"))
         self._on_setting_changed()
 
     def _on_setting_changed(self, *_args) -> None:
@@ -559,18 +626,18 @@ class ManipulatorApp:
         self._preview_after_id = None
 
         if self.original_image is None:
-            self.output_size_var.set("Output size: —")
+            self.output_size_var.set(tr("preview.output_size_empty"))
             return
 
         try:
             rendered = self._build_manipulator().render(self.original_image)
         except Exception as e:
             logger.exception("Preview failed")
-            self.status_var.set(f"Preview failed: {e}")
+            self.status_var.set(tr("status.preview_failed", error=e))
             return
 
         self.output_size_var.set(
-            f"Output size: {rendered.width} × {rendered.height} px"
+            tr("preview.output_size", width=rendered.width, height=rendered.height)
         )
         self._show_image(rendered)
 
@@ -604,8 +671,11 @@ class ManipulatorApp:
         """Open a file dialog and add the selected images."""
         patterns = " ".join("*" + ext for ext in config.valid_extensions)
         paths = filedialog.askopenfilenames(
-            title="Select Images",
-            filetypes=[("Images", patterns), ("All files", "*.*")],
+            title=tr("dialog.select_images"),
+            filetypes=[
+                (tr("dialog.filter_images"), patterns),
+                (tr("dialog.filter_all"), "*.*"),
+            ],
         )
         if paths:
             self._add_files(paths)
@@ -627,13 +697,13 @@ class ManipulatorApp:
 
         if not added:
             ErrorDialog.show_warning(
-                "No Images",
-                "No supported image files were added.",
+                tr("dialog.no_images.title"),
+                tr("dialog.no_images.message"),
                 parent=self.root,
             )
             return
 
-        self.status_var.set(f"Added {added} image(s)")
+        self.status_var.set(tr("status.added", count=added))
         if self.current_index < 0 and self.image_paths:
             self._select_index(len(self.image_paths) - added)
 
@@ -673,8 +743,12 @@ class ManipulatorApp:
         except Exception as e:
             logger.error(f"Failed to load {path}: {e}")
             ErrorDialog.show_error(
-                "Cannot Load Image",
-                f"Failed to load {os.path.basename(path)}:\n{e}",
+                tr("dialog.cannot_load.title"),
+                tr(
+                    "dialog.cannot_load.message",
+                    name=os.path.basename(path),
+                    error=e,
+                ),
                 parent=self.root,
             )
             return
@@ -705,8 +779,8 @@ class ManipulatorApp:
         """Clear the currently loaded image and the preview."""
         self.current_index = -1
         self.original_image = None
-        self.current_name_var.set("No image selected")
-        self.output_size_var.set("Output size: —")
+        self.current_name_var.set(tr("preview.no_image"))
+        self.output_size_var.set(tr("preview.output_size_empty"))
         self.preview_canvas.delete("all")
 
     # --- Settings persistence ---
@@ -739,6 +813,7 @@ class ManipulatorApp:
     def _get_settings_snapshot(self) -> dict:
         """Snapshot every persisted setting from the widgets."""
         return {
+            "language": validate_language(self.language_var.get()),
             "width": self._int_value(
                 self.width_var, config.default_width,
                 config.min_dimension, config.max_dimension,
@@ -765,8 +840,8 @@ class ManipulatorApp:
                 self.font_size_var, config.default_font_size,
                 config.min_font_size, config.max_font_size,
             ),
-            "font_style": self.font_style_var.get(),
-            "position": self.position_var.get(),
+            "font_style": canonical_enum("font_style", self.font_style_var.get()),
+            "position": canonical_enum("position", self.position_var.get()),
             "offset_up": self._int_value(
                 self.offset_up_var, config.default_offset_up, 0
             ),
@@ -782,6 +857,7 @@ class ManipulatorApp:
         if not saved:
             return
 
+        self.language_var.set(validate_language(saved.get("language")))
         self.width_var.set(str(saved["width"]))
         self.height_var.set(str(saved["height"]))
         self.maintain_aspect_var.set(saved["maintain_aspect"])
@@ -793,11 +869,11 @@ class ManipulatorApp:
         self.text_var.set(saved["text"])
         self.text_color = saved["color"]
         self.color_preview.config(bg=self.text_color)
-        self.position_var.set(saved["position"])
+        self.position_var.set(translate_enum("position", saved["position"]))
         self.offset_up_var.set(str(saved["offset_up"]))
         self.offset_left_var.set(str(saved["offset_left"]))
         self.font_family_var.set(saved["font_family"])
-        self.font_style_var.set(saved["font_style"])
+        self.font_style_var.set(translate_enum("font_style", saved["font_style"]))
         self.font_size_var.set(str(saved["font_size"]))
 
         self.font_path = saved.get("font_path")
@@ -808,7 +884,7 @@ class ManipulatorApp:
             self.font_file_label.config(text=os.path.basename(self.font_path))
             self.font_family_combo.config(state="disabled")
         else:
-            self.font_file_label.config(text="System (default)")
+            self.font_file_label.config(text=tr("text.system_default"))
             self.font_family_combo.config(state="normal")
 
         self.output_dir_var.set(saved["output_dir"] or self._default_output_dir())
@@ -817,21 +893,21 @@ class ManipulatorApp:
     def reset_settings(self) -> None:
         """Return all settings to their defaults after confirmation."""
         if not messagebox.askyesno(
-            "Reset Settings",
-            "Return all settings to their defaults?\n\n"
-            "The saved settings file will be removed.",
+            tr("dialog.reset.title"),
+            tr("dialog.reset.message"),
             parent=self.root,
         ):
             return
         clear_settings()
         self._reset_settings_widgets()
-        self.status_var.set("Settings reset to defaults")
+        self.status_var.set(tr("status.settings_reset"))
 
     def _reset_settings_widgets(self) -> None:
         """Reset all setting widgets to their defaults."""
         self.width_var.set(str(config.default_width))
         self.height_var.set(str(config.default_height))
-        self.preset_var.set("Custom")
+        self.preset_var.set(tr("resize.custom"))
+        self.language_var.set(detect_system_language())
         self.maintain_aspect_var.set(config.default_maintain_aspect_ratio)
         self.add_dimensions_var.set(config.default_add_dimensions_to_filename)
         self.rotate_portrait_var.set(config.default_rotate_portrait_to_landscape)
@@ -841,15 +917,17 @@ class ManipulatorApp:
         self.text_var.set(config.default_text)
         self.text_color = config.default_color
         self.color_preview.config(bg=self.text_color)
-        self.position_var.set(config.default_position)
+        self.position_var.set(translate_enum("position", config.default_position))
         self.offset_up_var.set(str(config.default_offset_up))
         self.offset_left_var.set(str(config.default_offset_left))
         self.font_family_var.set(config.default_font_family)
-        self.font_style_var.set(config.default_font_style)
+        self.font_style_var.set(
+            translate_enum("font_style", config.default_font_style)
+        )
         self.font_size_var.set(str(config.default_font_size))
 
         self.font_path = None
-        self.font_file_label.config(text="System (default)")
+        self.font_file_label.config(text=tr("text.system_default"))
         self.font_family_combo.config(state="normal")
 
         self.output_dir_var.set(self._default_output_dir())
@@ -860,7 +938,9 @@ class ManipulatorApp:
     def choose_color(self) -> None:
         """Open the color picker."""
         color = colorchooser.askcolor(
-            color=self.text_color, title="Select text color", parent=self.root
+            color=self.text_color,
+            title=tr("dialog.select_text_color"),
+            parent=self.root,
         )
         if color[1]:
             self.text_color = color[1]
@@ -870,8 +950,8 @@ class ManipulatorApp:
     def choose_font(self) -> None:
         """Pick a custom .ttf/.otf font file."""
         path = filedialog.askopenfilename(
-            title="Select font file",
-            filetypes=[("Fonts", "*.ttf *.otf")],
+            title=tr("dialog.select_font_file"),
+            filetypes=[(tr("dialog.filter_fonts"), "*.ttf *.otf")],
         )
         if not path:
             return
@@ -883,7 +963,7 @@ class ManipulatorApp:
     def use_system_font(self) -> None:
         """Drop the custom font file and use the selected family again."""
         self.font_path = None
-        self.font_file_label.config(text="System (default)")
+        self.font_file_label.config(text=tr("text.system_default"))
         self.font_family_combo.config(state="normal")
         self._on_setting_changed()
 
@@ -902,7 +982,7 @@ class ManipulatorApp:
     def browse_output_dir(self) -> None:
         """Pick the output folder."""
         folder = filedialog.askdirectory(
-            title="Select Output Folder", initialdir=self.app_dir
+            title=tr("dialog.select_output_folder"), initialdir=self.app_dir
         )
         if folder:
             self.output_dir_var.set(folder)
@@ -915,16 +995,17 @@ class ManipulatorApp:
             return
         if not self.image_paths:
             ErrorDialog.show_warning(
-                "No Images", "Please add image files first.", parent=self.root
+                tr("dialog.no_images.title"),
+                tr("dialog.no_images_for_processing.message"),
+                parent=self.root,
             )
             return
 
         manipulator = self._build_manipulator()
         overwrite = bool(self.overwrite_var.get())
         if overwrite and not messagebox.askyesno(
-            "Overwrite Originals",
-            f"This will overwrite {len(self.image_paths)} original file(s).\n"
-            "Continue?",
+            tr("dialog.overwrite.title"),
+            tr("dialog.overwrite.message", count=len(self.image_paths)),
             parent=self.root,
         ):
             return
@@ -934,7 +1015,7 @@ class ManipulatorApp:
 
         self._processing = True
         self.process_button.config(state="disabled")
-        self.status_var.set("Processing…")
+        self.status_var.set(tr("status.processing"))
 
         threading.Thread(
             target=self._process_worker,
@@ -956,7 +1037,15 @@ class ManipulatorApp:
 
         for index, path in enumerate(paths, start=1):
             self._events.put(
-                ("status", f"Processing {index}/{total}: {os.path.basename(path)}")
+                (
+                    "status",
+                    tr(
+                        "status.processing_item",
+                        index=index,
+                        total=total,
+                        name=os.path.basename(path),
+                    ),
+                )
             )
             result = manipulator.process_path(path, output_dir, overwrite=overwrite)
             if result.success:
@@ -993,24 +1082,42 @@ class ManipulatorApp:
         self.process_button.config(state="normal")
 
         if not errors:
-            self.status_var.set(f"Done: {success} of {total} image(s) processed")
-            destination = "the original files" if overwrite else output_dir
+            self.status_var.set(
+                tr("status.done", success=success, total=total)
+            )
+            destination = (
+                tr("dialog.complete.originals") if overwrite else output_dir
+            )
             ErrorDialog.show_info(
-                "Complete",
-                f"Processed {success} image(s).\n\nSaved to: {destination}",
+                tr("dialog.complete.title"),
+                tr(
+                    "dialog.complete.message",
+                    count=success,
+                    destination=destination,
+                ),
                 parent=self.root,
             )
             return
 
         self.status_var.set(
-            f"Processed {success} of {total} image(s); {len(errors)} failed"
+            tr(
+                "status.partial",
+                success=success,
+                total=total,
+                failed=len(errors),
+            )
         )
         summary = "\n".join(errors[:3])
         if len(errors) > 3:
-            summary += f"\n… and {len(errors) - 3} more"
+            summary += "\n" + tr("dialog.errors.more", count=len(errors) - 3)
         ErrorDialog.show_warning(
-            "Completed with Errors",
-            f"Processed {success} of {total} image(s).\n\n{summary}",
+            tr("dialog.errors.title"),
+            tr(
+                "dialog.errors.message",
+                success=success,
+                total=total,
+                summary=summary,
+            ),
             parent=self.root,
         )
 
@@ -1025,8 +1132,8 @@ class ManipulatorApp:
                 self.font_size_var, config.default_font_size,
                 config.min_font_size, config.max_font_size,
             ),
-            font_style=self.font_style_var.get(),
-            position=self.position_var.get(),
+            font_style=canonical_enum("font_style", self.font_style_var.get()),
+            position=canonical_enum("position", self.position_var.get()),
             offset_up=self._int_value(
                 self.offset_up_var, config.default_offset_up, 0
             ),

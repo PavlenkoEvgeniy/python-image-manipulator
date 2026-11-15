@@ -8,6 +8,7 @@ from typing import Optional, Tuple
 from PIL import Image, ImageOps
 
 from .config import config
+from .i18n import tr
 from .resize import OutputFormat, resize_image
 from .text_overlay import TextOverlay
 
@@ -264,10 +265,14 @@ class ImageManipulator:
         path = Path(input_path)
 
         if not path.is_file():
-            return ProcessResult(False, error=f"Input file not found: {path}")
+            return ProcessResult(False, error=tr("pipeline.not_found", path=path))
         if path.suffix.lower() not in self.SUPPORTED_INPUT_FORMATS:
             return ProcessResult(
-                False, error=f"Unsupported image format: {path.suffix or path.name}"
+                False,
+                error=tr(
+                    "pipeline.unsupported_format",
+                    suffix=path.suffix or path.name,
+                ),
             )
 
         try:
@@ -287,4 +292,6 @@ class ImageManipulator:
             return ProcessResult(True, output_path=output_path)
         except Exception as e:
             logger.error(f"Failed to process {path.name}: {e}")
-            return ProcessResult(False, error=f"Failed to process {path.name}: {e}")
+            return ProcessResult(
+                False, error=tr("pipeline.failed", name=path.name, error=e)
+            )

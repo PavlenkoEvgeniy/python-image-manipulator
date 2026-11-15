@@ -65,6 +65,10 @@ deliberately independent of Tkinter:
 - `ui.py` — Tkinter window: Resize/Text tabs, file list, debounced live preview,
   autosave, and a background batch worker. Worker threads never touch Tk widgets;
   status and completion events go through a `queue.Queue` polled on the main thread.
+- `i18n.py` — JSON catalogs in `locales/`, symbolic message IDs, English fallback,
+  OS-locale detection, and canonical-token ↔ translated-label mapping for enum
+  values. `uifonts.py` applies a language's preferred UI font family to the Tk
+  named fonts and to the dialogs' explicit fonts.
 - `positioning.py` / `dialogs.py` / `icon.py` / `app.py` — monitor-aware centering,
   modal dialogs, icon loading, and application bootstrap.
 
@@ -87,6 +91,13 @@ deliberately independent of Tkinter:
   widget (`label.image = photo`), as `_show_image()` does for the preview canvas.
 - Supported input formats are PNG/JPEG/BMP/GIF/TIFF/WEBP; selectable output formats are
   JPEG/PNG/WEBP/BMP. Overwriting keeps the original format, including GIF/TIFF.
+- **Settings and the pipeline store canonical English tokens.** `position` and
+  `font_style` in `settings.json` and `TextOverlay` are always `bottom right`,
+  `Bold`, …; comboboxes show translated labels and convert with `translate_enum` /
+  `canonical_enum`. Output filenames (`_text`) and `processed_images` are never
+  localized.
+- **No hardcoded user-visible text.** Widgets, menus, statuses, dialogs, file-dialog
+  titles and pipeline error messages go through `tr()`. Logs and README stay English.
 
 ### Adding a persisted setting
 
@@ -97,6 +108,15 @@ A setting touches several layers:
 3. UI variable, widget, trace registration, snapshot/apply/reset in `ui.py`.
 4. `tests/test_settings_store.py`, plus a pipeline/UI test where applicable.
 
+### Adding a UI string
+
+1. Add the key to `src/image_manipulator/locales/en.json` (the English source).
+2. Add the same key to every other catalog in `locales/`; `tests/test_i18n.py`
+   enforces identical keys and identical `{placeholders}`.
+3. Call `tr("section.key", **kwargs)`; use symbolic keys, not English text as the key.
+4. Enum labels shown in comboboxes are translated with `translate_enum` and read back
+   with `canonical_enum`.
+
 ### Settings behavior
 
 - Stored in the platform config directory
@@ -105,6 +125,8 @@ A setting touches several layers:
   `~/Library/Application Support/image-manipulator/settings.json` on macOS).
 - A corrupt file is ignored; an invalid field falls back to its own default while the
   rest loads as-is. Autosave is debounced (~300 ms) and flushed on close.
+- The interface language is stored as `language` (e.g. `ru`) and applies after a
+  restart. The first launch uses the OS locale, falling back to English.
 - `tkinterdnd2` and `screeninfo` are optional: missing drag & drop disables drop
   handlers, and missing monitor detection falls back to the whole virtual screen.
 
@@ -116,6 +138,8 @@ A setting touches several layers:
   `sys._MEIPASS/image_manipulator/icon.png`.
 - Build-time icons are `assets/icon.png` (Linux), `assets/icon.ico` (Windows), and
   `assets/icon.icns` (macOS). `tools/generate_icon.py` regenerates all of them.
+- Language catalogs are `src/image_manipulator/locales/*.json`, covered by the same
+  `[tool.setuptools.package-data]` entry and `--collect-data=image_manipulator`.
 - The release job uploads exactly three paths. If build names change, update both the
   CI matrix and the release `files:` list. Do not use `artifacts/**/*` — it leaks the
   macOS `.app` bundle internals into release assets.

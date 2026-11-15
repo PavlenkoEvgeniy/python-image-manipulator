@@ -14,6 +14,7 @@ import tempfile
 from typing import Any, Optional
 
 from .config import config
+from .i18n import detect_system_language, validate_language
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -42,6 +43,7 @@ def get_settings_path() -> str:
 def default_settings() -> dict:
     """Return a complete settings mapping with every default value."""
     return {
+        "language": config.default_language,
         "width": config.default_width,
         "height": config.default_height,
         "maintain_aspect": config.default_maintain_aspect_ratio,
@@ -168,6 +170,14 @@ def validate_settings(raw: dict) -> dict:
     # Output
     settings["output_dir"] = _string(raw, "output_dir", "")
     settings["overwrite"] = _bool(raw, "overwrite", False)
+
+    # Interface: an absent language means the file predates the setting, so the
+    # OS locale is the best default for both fresh and upgraded installs.
+    settings["language"] = (
+        validate_language(raw["language"])
+        if "language" in raw
+        else detect_system_language()
+    )
 
     return settings
 

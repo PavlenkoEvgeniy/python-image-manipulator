@@ -8,8 +8,10 @@ from PIL import ImageTk
 
 from . import __author__, __email__, __version__
 from .config import config
+from .i18n import tr
 from .icon import load_icon_image
 from .positioning import center_over_parent
+from .uifonts import ui_font
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class AboutDialog:
             parent: Parent window.
         """
         self.window = tk.Toplevel(parent)
-        self.window.title(f"About {config.name}")
+        self.window.title(tr("about.title", name=config.name))
         self.window.resizable(False, False)
         self.window.transient(parent)
 
@@ -57,34 +59,35 @@ class AboutDialog:
         tk.Label(
             frame,
             text=config.name,
-            font=("Arial", 16, "bold"),
+            font=ui_font(16, "bold"),
         ).pack(pady=(0, 8))
 
-        ttk.Label(frame, text=f"Version {__version__}").pack(pady=(0, 14))
+        ttk.Label(frame, text=tr("about.version", version=__version__)).pack(
+            pady=(0, 14)
+        )
 
         ttk.Separator(frame, orient="horizontal").pack(fill=tk.X, pady=(0, 14))
 
-        ttk.Label(frame, text="License: Freeware").pack(anchor=tk.W, pady=2)
-        ttk.Label(frame, text="Copyright © 2026").pack(anchor=tk.W, pady=2)
-        ttk.Label(frame, text=f"Author: {__author__}").pack(anchor=tk.W, pady=2)
-        ttk.Label(frame, text=f"Email: {__email__}").pack(anchor=tk.W, pady=2)
+        ttk.Label(frame, text=tr("about.license")).pack(anchor=tk.W, pady=2)
+        ttk.Label(frame, text=tr("about.copyright")).pack(anchor=tk.W, pady=2)
+        ttk.Label(frame, text=tr("about.author", author=__author__)).pack(
+            anchor=tk.W, pady=2
+        )
+        ttk.Label(frame, text=tr("about.email", email=__email__)).pack(
+            anchor=tk.W, pady=2
+        )
 
         ttk.Separator(frame, orient="horizontal").pack(fill=tk.X, pady=14)
 
-        description = (
-            "Resize images and overlay text in a single pass.\n"
-            "Images are resized first, then the text is drawn on the result, "
-            "so font size matches the output dimensions."
-        )
         tk.Label(
             frame,
-            text=description,
-            font=("Arial", 9),
+            text=tr("about.description"),
+            font=ui_font(9),
             wraplength=380,
             justify=tk.CENTER,
         ).pack(pady=(0, 14))
 
-        ttk.Button(frame, text="Close", command=self.window.destroy).pack()
+        ttk.Button(frame, text=tr("about.close"), command=self.window.destroy).pack()
 
 
 class MessageDialog:
@@ -116,7 +119,7 @@ class MessageDialog:
 
         body = ttk.Frame(frame)
         body.pack()
-        tk.Label(body, text=icon_text, fg=color, font=("Arial", 24)).pack(
+        tk.Label(body, text=icon_text, fg=color, font=ui_font(24)).pack(
             side=tk.LEFT, padx=(0, 12)
         )
         ttk.Label(body, text=message, wraplength=360, justify=tk.LEFT).pack(
@@ -124,7 +127,7 @@ class MessageDialog:
         )
 
         self.ok_button = ttk.Button(
-            frame, text="OK", command=self.window.destroy, width=10
+            frame, text=tr("dialog.ok"), command=self.window.destroy, width=10
         )
         self.ok_button.pack(pady=(16, 0))
 
