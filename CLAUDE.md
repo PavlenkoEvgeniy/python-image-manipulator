@@ -99,6 +99,10 @@ deliberately independent of Tkinter:
   `Bold`, …; comboboxes show translated labels and convert with `translate_enum` /
   `canonical_enum`. Output filenames (`_text`) and `processed_images` are never
   localized.
+- **The default output folder is `processed_images` on the Desktop** (`~/Desktop`
+  or `%USERPROFILE%\Desktop`), falling back to the home directory when no Desktop
+  folder exists. Never default to the directory of an installed binary: `/usr/bin`
+  and `Program Files` are not writable by the user.
 - **No hardcoded user-visible text.** Widgets, menus, statuses, dialogs, file-dialog
   titles and pipeline error messages go through `tr()`. Logs and README stay English.
 - **Network access lives only in `update_checker.py`** and only inside an explicit
@@ -150,9 +154,24 @@ A setting touches several layers:
   `assets/icon.icns` (macOS). `tools/generate_icon.py` regenerates all of them.
 - Language catalogs are `src/image_manipulator/locales/*.json`, covered by the same
   `[tool.setuptools.package-data]` entry and `--collect-data=image_manipulator`.
-- The release job uploads exactly three paths. If build names change, update both the
-  CI matrix and the release `files:` list. Do not use `artifacts/**/*` — it leaks the
-  macOS `.app` bundle internals into release assets.
+- Release assets are installers, not raw PyInstaller binaries:
+  - Linux: `.deb` (Debian family) and `.rpm` (Fedora/openSUSE family), built by
+    `packaging/linux/build_packages.sh`. Both install `/usr/bin/image-manipulator`,
+    a desktop entry, and a 256 px icon. The RPM spec disables `__os_install_post`
+    so the one-file payload is never stripped.
+  - Windows: Inno Setup `setup.exe` built from
+    `packaging/windows/image-manipulator.iss`; installs to `{autopf}`, creates Start
+    Menu and optional desktop shortcuts, and registers an uninstaller in
+    Apps & Features.
+  - macOS: a `.dmg` containing `Image Manipulator.app` and an `/Applications`
+    symlink, created with `hdiutil` on the macOS runner.
+- Installers are unsigned: macOS Gatekeeper and Windows SmartScreen may warn. Do not
+  claim they are signed or notarized.
+- The update checker picks the installer for the running system: Linux `.deb` or
+  `.rpm` via `/etc/os-release` (falling back to available tools), Windows `setup.exe`,
+  macOS `.dmg`/`.pkg`, and the release page when no matching asset exists.
+- The release job uploads the installer globs only. Do not use `artifacts/**/*` — it
+  leaks the macOS `.app` bundle internals into release assets.
 - The version is duplicated in `src/image_manipulator/__init__.py`,
   `config.AppConfig.version`, `pyproject.toml`, and `README.md`; keep them in sync for a
   release.

@@ -7,6 +7,7 @@ on:
       - 'v*'
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,21 +16,9 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            build_name: ImageManipulator-linux
-            artifact_name: ImageManipulator-linux
-            icon: assets/icon.png
-          - os: windows-latest
-            build_name: ImageManipulator-windows
-            artifact_name: ImageManipulator-windows.exe
-            icon: assets/icon.ico
-          - os: macos-latest
-            build_name: ImageManipulator-macos
-            artifact_name: ImageManipulator-macos
-            icon: assets/icon.icns
 
     steps:
       - name: Checkout code
@@ -51,17 +40,80 @@ jobs:
       - name: Install PyInstaller
         run: pip install pyinstaller
 
-      - name: Build executable
-        run: |
-          pyinstaller --onefile --windowed --icon=${{ matrix.icon }} --collect-data=image_manipulator --hidden-import=PIL._tkinter_finder --hidden-import=PIL._imagingtk --hidden-import=tkinterdnd2 --hidden-import=screeninfo --name ${{ matrix.build_name }} main.py
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "value=$(python -c 'from image_manipulator import __version__; print(__version__)')" >> "$GITHUB_OUTPUT"
+
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Build Linux packages
+        if: runner.os == 'Linux'
+        shell: bash
         env:
           PYTHONPATH: src
+        run: |
+          pyinstaller --onefile --windowed --icon=assets/icon.png \
+            --collect-data=image_manipulator \
+            --hidden-import=PIL._tkinter_finder \
+            --hidden-import=PIL._imagingtk \
+            --hidden-import=tkinterdnd2 \
+            --hidden-import=screeninfo \
+            --name ImageManipulator-linux main.py
+          bash packaging/linux/build_packages.sh \
+            "${{ steps.version.outputs.value }}" \
+            "dist/ImageManipulator-linux" \
+            "dist/installers"
 
-      - name: Upload artifact
+      - name: Install Inno Setup
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          PYTHONPATH: src
+        run: |
+          pyinstaller --onefile --windowed --icon=assets/icon.ico `
+            --collect-data=image_manipulator `
+            --hidden-import=PIL._tkinter_finder `
+            --hidden-import=PIL._imagingtk `
+            --hidden-import=tkinterdnd2 `
+            --hidden-import=screeninfo `
+            --name ImageManipulator-windows main.py
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
+          & $iscc "/DMyAppVersion=${{ steps.version.outputs.value }}" "/DRepoRoot=$env:GITHUB_WORKSPACE" "/DSourceExe=$env:GITHUB_WORKSPACE\dist\ImageManipulator-windows.exe" "/DOutputDir=$env:GITHUB_WORKSPACE\dist\installers" "packaging\windows\image-manipulator.iss"
+
+      - name: Build macOS disk image
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          PYTHONPATH: src
+        run: |
+          pyinstaller --onefile --windowed --icon=assets/icon.icns \
+            --collect-data=image_manipulator \
+            --hidden-import=PIL._tkinter_finder \
+            --hidden-import=PIL._imagingtk \
+            --hidden-import=tkinterdnd2 \
+            --hidden-import=screeninfo \
+            --name "Image Manipulator" main.py
+          mkdir -p dist/dmg dist/installers
+          cp -R "dist/Image Manipulator.app" dist/dmg/
+          ln -s /Applications dist/dmg/Applications
+          hdiutil create -volname "Image Manipulator" \
+            -srcfolder dist/dmg -ov -format UDZO \
+            "dist/installers/ImageManipulator-${{ steps.version.outputs.value }}-macos.dmg"
+
+      - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: dist/
+          name: ImageManipulator-${{ runner.os }}
+          path: dist/installers/*
           retention-days: 30
 
   release:
@@ -79,9 +131,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/ImageManipulator-linux/ImageManipulator-linux
-            artifacts/ImageManipulator-windows.exe/ImageManipulator-windows.exe
-            artifacts/ImageManipulator-macos/ImageManipulator-macos
+            artifacts/ImageManipulator-Linux/*.deb
+            artifacts/ImageManipulator-Linux/*.rpm
+            artifacts/ImageManipulator-Windows/*setup.exe
+            artifacts/ImageManipulator-macOS/*.dmg
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

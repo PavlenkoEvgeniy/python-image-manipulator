@@ -1209,8 +1209,8 @@ class ManipulatorApp:
         return value
 
     def _default_output_dir(self) -> str:
-        """Default output folder next to the application."""
-        return os.path.join(self.app_dir, config.default_output_dir)
+        """Default output folder: ``processed_images`` on the Desktop."""
+        return config.default_output_directory()
 
     # --- Lifecycle ---
 

@@ -3,7 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Optional, Tuple
 
 
 @dataclass
@@ -11,7 +11,7 @@ class AppConfig:
     """Application configuration shared by the UI and the pipeline."""
 
     name: str = "Image Manipulator"
-    version: str = "1.5.0"
+    version: str = "1.6.0"
     default_language: str = "en"
     default_check_updates: bool = True
     window_width: int = 1100
@@ -93,6 +93,17 @@ class AppConfig:
     def default_output_dir(self) -> str:
         """Default output directory name."""
         return "processed_images"
+
+    def default_output_directory(self, home: Optional[str] = None) -> str:
+        """Default output folder: ``processed_images`` on the user's Desktop.
+
+        Falls back to the home directory when there is no Desktop folder, for
+        example on a localized Windows installation.
+        """
+        user_home = os.path.expanduser("~") if home is None else home
+        desktop = os.path.join(user_home, "Desktop")
+        base = desktop if os.path.isdir(desktop) else user_home
+        return os.path.join(base, self.default_output_dir)
 
     def get_preset_dimensions(self, preset_name: str) -> Tuple[int, int]:
         """Return (width, height) for a named preset, or (0, 0)."""

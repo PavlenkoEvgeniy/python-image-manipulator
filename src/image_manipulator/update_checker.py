@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -31,6 +32,27 @@ MAX_RESPONSE_BYTES = 1_000_000
 STATE_FILENAME = "update_check.json"
 
 _VERSION_PATTERN = re.compile(r"(\d+(?:\.\d+)*)")
+
+_DEB_DISTROS = {
+    "debian",
+    "ubuntu",
+    "linuxmint",
+    "pop",
+    "elementary",
+    "zorin",
+}
+_RPM_DISTROS = {
+    "fedora",
+    "rhel",
+    "centos",
+    "rocky",
+    "almalinux",
+    "opensuse",
+    "opensuse-leap",
+    "opensuse-tumbleweed",
+    "suse",
+    "amzn",
+}
 
 
 @dataclass(frozen=True)
@@ -69,13 +91,37 @@ def platform_asset_key(platform: Optional[str] = None) -> str:
     return "linux"
 
 
-def pick_download_url(
-    assets: Any,
-    platform: Optional[str] = None,
-    release_url: str = RELEASES_PAGE,
+def linux_package_kind(
+    os_release: str = "/etc/os-release",
+    which=shutil.which,
 ) -> str:
-    """Pick the direct asset URL for the platform, falling back to the release page."""
-    key = platform_asset_key(platform)
+    """Return ``deb`` or ``rpm`` for the running Linux distribution."""
+    identifiers = set()
+    try:
+        with open(os_release, encoding="utf-8") as handle:
+            for line in handle:
+                key, _, value = line.partition("=")
+                if key in ("ID", "ID_LIKE"):
+                    identifiers.update(
+                        value.strip().strip('"').lower().split()
+                    )
+    except OSError:
+        pass
+
+    if identifiers & _DEB_DISTROS:
+        return "deb"
+    if identifiers & _RPM_DISTROS:
+        return "rpm"
+    if which("apt-get") or which("dpkg"):
+        return "deb"
+    if which("dnf") or which("yum") or which("zypper") or which("rpm"):
+        return "rpm"
+    return "deb"
+
+
+def _https_assets(assets: Any, key: str) -> list:
+    """Assets whose name matches the platform and whose URL is https."""
+    matches = []
     if isinstance(assets, list):
         for asset in assets:
             if not isinstance(asset, dict):
@@ -83,14 +129,50 @@ def pick_download_url(
             name = str(asset.get("name", "")).lower()
             url = asset.get("browser_download_url")
             if key in name and isinstance(url, str) and url.startswith("https://"):
+                matches.append((name, url))
+    return matches
+
+
+def pick_download_url(
+    assets: Any,
+    platform: Optional[str] = None,
+    release_url: str = RELEASES_PAGE,
+    package_kind: Optional[str] = None,
+) -> str:
+    """Pick the direct installer URL for the platform.
+
+    Linux prefers the package type of the running distribution; macOS and
+    Windows prefer disk-image and setup installers. Falls back to the release
+    page when no suitable asset exists.
+    """
+    key = platform_asset_key(platform)
+    matches = _https_assets(assets, key)
+    if not matches:
+        return release_url
+
+    if key == "linux":
+        kind = package_kind or linux_package_kind()
+        for suffix in ("." + kind, ".deb", ".rpm", ".appimage"):
+            for name, url in matches:
+                if name.endswith(suffix):
+                    return url
+    elif key == "windows":
+        for name, url in matches:
+            if "setup" in name or name.endswith(".msi"):
                 return url
-    return release_url
+    elif key == "macos":
+        for name, url in matches:
+            if name.endswith((".dmg", ".pkg")):
+                return url
+
+    return matches[0][1]
 
 
 def parse_latest_release(
     payload: Any,
     platform: Optional[str] = None,
     current_version: str = __version__,
+    package_kind: Optional[str] = None,
 ) -> Optional[UpdateInfo]:
     """Turn a GitHub ``releases/latest`` payload into UpdateInfo.
 
@@ -113,7 +195,10 @@ def parse_latest_release(
     return UpdateInfo(
         version=version,
         download_url=pick_download_url(
-            payload.get("assets"), platform=platform, release_url=release_url
+            payload.get("assets"),
+            platform=platform,
+            release_url=release_url,
+            package_kind=package_kind,
         ),
         release_url=release_url,
     )
