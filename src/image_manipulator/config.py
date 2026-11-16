@@ -11,7 +11,7 @@ class AppConfig:
     """Application configuration shared by the UI and the pipeline."""
 
     name: str = "Image Manipulator"
-    version: str = "1.6.1"
+    version: str = "1.7.0"
     default_language: str = "en"
     default_check_updates: bool = True
     window_width: int = 1100
