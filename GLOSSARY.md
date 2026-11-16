@@ -20,3 +20,7 @@
 - **Release asset** — a downloadable file attached to a release. The direct
   download link in an update check points at the asset for the running operating
   system, falling back to the release page when that asset is absent.
+- **Batch run** — one full processing pass over every selected file in the list,
+  started by the "Process All" action. A repeated batch run is a new pass that
+  produces new results; it never replaces the results of earlier runs.
+  _Avoid_: reprocess, run, session.

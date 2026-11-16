@@ -89,6 +89,24 @@ def test_update_dialog_opens_the_direct_download(root, monkeypatch):
     assert opened == ["https://example.com/ImageManipulator-linux"]
 
 
+def test_message_dialog_survives_a_window_deleted_while_waiting(
+    root, monkeypatch
+):
+    # The user closes the dialog while wait_visibility() is pending. The
+    # constructor must not let TclError escape: it used to propagate out of
+    # the polling callback and kill event processing forever, which froze
+    # the status bar and left the Process All button disabled after a run.
+    def raise_deleted(self, *args, **kwargs):
+        raise tk.TclError(
+            'window ".!toplevel" was deleted before its visibility changed'
+        )
+
+    monkeypatch.setattr(tk.Misc, "winfo_ismapped", lambda self: False)
+    monkeypatch.setattr(tk.Misc, "wait_visibility", raise_deleted)
+
+    dialogs.ErrorDialog.show_info("Finished", "All done", parent=root)
+
+
 def test_about_icon_failure_is_logged(root, monkeypatch, caplog):
     def broken_icon(size=None):
         raise FileNotFoundError("icon.png is missing")

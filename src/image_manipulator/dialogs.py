@@ -201,9 +201,19 @@ class MessageDialog:
 
         self.window.bind("<Return>", lambda event: self.window.destroy())
         self.window.bind("<Escape>", lambda event: self.window.destroy())
-        self.window.wait_visibility()
-        self.window.grab_set()
-        self.ok_button.focus_set()
+        # center_over_parent already pumped events, so the dialog is normally
+        # mapped and its visibility event has been consumed: waiting again
+        # blocks until the *next* visibility change, and closing the dialog
+        # during that wait raised TclError out of this constructor (which
+        # then killed the caller's event loop). Only wait while the window is
+        # genuinely unmapped, and treat a vanished window as already closed.
+        try:
+            if not self.window.winfo_ismapped():
+                self.window.wait_visibility()
+            self.window.grab_set()
+            self.ok_button.focus_set()
+        except tk.TclError:
+            logger.debug("Dialog closed before it became interactive")
 
 
 class ErrorDialog:

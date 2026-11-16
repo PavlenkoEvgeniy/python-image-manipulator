@@ -1059,41 +1059,72 @@ class ManipulatorApp:
         success = 0
         errors = []
 
-        for index, path in enumerate(paths, start=1):
-            self._events.put(
-                (
-                    "status",
-                    tr(
-                        "status.processing_item",
-                        index=index,
-                        total=total,
-                        name=os.path.basename(path),
-                    ),
+        try:
+            for index, path in enumerate(paths, start=1):
+                self._events.put(
+                    (
+                        "status",
+                        tr(
+                            "status.processing_item",
+                            index=index,
+                            total=total,
+                            name=os.path.basename(path),
+                        ),
+                    )
                 )
+                result = manipulator.process_path(
+                    path, output_dir, overwrite=overwrite
+                )
+                if result.success:
+                    success += 1
+                elif result.error:
+                    errors.append(result.error)
+        except Exception:
+            # The UI waits for the completion event to unlock the controls;
+            # never leave it hanging, whatever went wrong in the loop.
+            logger.exception("Batch worker stopped early")
+        finally:
+            self._events.put(
+                ("complete", success, total, errors, output_dir, overwrite)
             )
-            result = manipulator.process_path(path, output_dir, overwrite=overwrite)
-            if result.success:
-                success += 1
-            elif result.error:
-                errors.append(result.error)
-
-        self._events.put(("complete", success, total, errors, output_dir, overwrite))
 
     def _poll_events(self) -> None:
-        """Apply worker events on the UI thread."""
-        try:
-            while True:
-                event = self._events.get_nowait()
-                if event[0] == "status":
-                    self.status_var.set(event[1])
-                elif event[0] == "complete":
-                    self._on_processing_complete(*event[1:])
-                elif event[0] == "update":
-                    self._on_update_result(*event[1:])
-        except queue.Empty:
-            pass
+        """Apply worker events on the UI thread.
 
-        self.root.after(100, self._poll_events)
+        Each event is dispatched under its own guard and the next tick is
+        always rescheduled: an exception escaping this loop used to stop it
+        forever, which froze the status bar and left the Process All button
+        disabled after a batch run.
+        """
+        try:
+            self._drain_events()
+        except Exception:
+            logger.exception("Event polling failed")
+        try:
+            self.root.after(100, self._poll_events)
+        except (RuntimeError, tk.TclError):
+            pass  # the window is gone; polling stops with it
+
+    def _drain_events(self) -> None:
+        """Apply every queued event; one bad event must not block the rest."""
+        while True:
+            try:
+                event = self._events.get_nowait()
+            except queue.Empty:
+                return
+            try:
+                self._dispatch_event(event)
+            except Exception:
+                logger.exception("Failed to apply event %r", event)
+
+    def _dispatch_event(self, event: tuple) -> None:
+        """Apply a single worker/UI event on the UI thread."""
+        if event[0] == "status":
+            self.status_var.set(event[1])
+        elif event[0] == "complete":
+            self._on_processing_complete(*event[1:])
+        elif event[0] == "update":
+            self._on_update_result(*event[1:])
 
     def _on_processing_complete(
         self,
