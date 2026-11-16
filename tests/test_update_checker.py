@@ -232,52 +232,6 @@ class TestReleaseParsing:
         assert info.release_url == update_checker.RELEASES_PAGE
 
 
-class TestDailyGate:
-    """The automatic check runs at most once per day."""
-
-    def test_missing_state_is_due(self):
-        assert update_checker.is_check_due(None)
-
-    def test_recent_check_is_not_due(self):
-        now = 1_000_000.0
-
-        assert not update_checker.is_check_due(now - 60, now=now)
-
-    def test_elapsed_interval_is_due(self):
-        now = 1_000_000.0
-
-        assert update_checker.is_check_due(
-            now - update_checker.CHECK_INTERVAL_SECONDS, now=now
-        )
-
-    def test_invalid_state_is_due(self):
-        assert update_checker.is_check_due("yesterday")
-        assert update_checker.is_check_due(True)
-
-
-class TestStateFile:
-    """The last successful check survives restarts."""
-
-    def test_round_trip(self, tmp_path):
-        path = str(tmp_path / "update_check.json")
-
-        assert update_checker.save_last_check(123.5, path=path)
-        assert update_checker.load_last_check(path=path) == 123.5
-
-    def test_missing_or_corrupt_state(self, tmp_path):
-        assert update_checker.load_last_check(path=str(tmp_path / "nope.json")) is None
-
-        corrupt = tmp_path / "update_check.json"
-        corrupt.write_text("{not json", encoding="utf-8")
-        assert update_checker.load_last_check(path=str(corrupt)) is None
-
-    def test_non_numeric_state_is_ignored(self, tmp_path):
-        path = tmp_path / "update_check.json"
-        path.write_text('{"last_check": "yesterday"}', encoding="utf-8")
-
-        assert update_checker.load_last_check(path=str(path)) is None
-
-
 class TestNetworkBoundary:
     """The network call is the only side effect and can be mocked."""
 

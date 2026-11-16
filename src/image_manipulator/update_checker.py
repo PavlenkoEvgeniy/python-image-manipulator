@@ -1,4 +1,4 @@
-"""Optional daily check for a newer GitHub release.
+"""Optional check for a newer GitHub release at every startup.
 
 The module is pure Python and Tk-free: the UI runs it in a worker thread and
 opens the chosen download URL through the operating system's default browser.
@@ -8,12 +8,9 @@ import time.
 
 import json
 import logging
-import os
 import re
 import shutil
 import sys
-import tempfile
-import time
 import urllib.request
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
@@ -26,10 +23,8 @@ REPOSITORY = "PavlenkoEvgeniy/python-image-manipulator"
 RELEASES_PAGE = f"https://github.com/{REPOSITORY}/releases/latest"
 LATEST_RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
 
-CHECK_INTERVAL_SECONDS = 24 * 60 * 60
 REQUEST_TIMEOUT_SECONDS = 6
 MAX_RESPONSE_BYTES = 1_000_000
-STATE_FILENAME = "update_check.json"
 
 _VERSION_PATTERN = re.compile(r"(\d+(?:\.\d+)*)")
 
@@ -234,71 +229,3 @@ def check_for_update(
     """Run one network check and return update information when available."""
     payload = fetch_latest_release(timeout=timeout)
     return parse_latest_release(payload, platform=platform)
-
-
-def get_state_path() -> str:
-    """Path of the update-check state file next to the settings file."""
-    from .settings_store import get_settings_path
-
-    return os.path.join(
-        os.path.dirname(get_settings_path()), STATE_FILENAME
-    )
-
-
-def is_check_due(
-    last_checked: Optional[float],
-    now: Optional[float] = None,
-    interval: float = CHECK_INTERVAL_SECONDS,
-) -> bool:
-    """Whether a daily check may run; a missing or invalid stamp means yes."""
-    if not isinstance(last_checked, (int, float)) or isinstance(last_checked, bool):
-        return True
-    current = time.time() if now is None else now
-    return current - last_checked >= interval
-
-
-def load_last_check(path: Optional[str] = None) -> Optional[float]:
-    """Read the last successful check timestamp, or None."""
-    target = path or get_state_path()
-    try:
-        with open(target, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except FileNotFoundError:
-        return None
-    except (OSError, ValueError) as exc:
-        logger.warning("Ignoring update-check state %s: %s", target, exc)
-        return None
-
-    if not isinstance(payload, dict):
-        return None
-    value = payload.get("last_check")
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
-    return None
-
-
-def save_last_check(timestamp: Optional[float] = None, path: Optional[str] = None) -> bool:
-    """Atomically record a successful check; failures are logged, not raised."""
-    target = path or get_state_path()
-    payload = {"last_check": time.time() if timestamp is None else timestamp}
-    directory = os.path.dirname(target)
-    try:
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(
-            prefix=".update-", suffix=".tmp", dir=directory or None
-        )
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                json.dump(payload, handle)
-            os.replace(tmp, target)
-        except BaseException:
-            try:
-                os.remove(tmp)
-            except OSError:
-                pass
-            raise
-        return True
-    except Exception as exc:
-        logger.warning("Failed to save update-check state to %s: %s", target, exc)
-        return False

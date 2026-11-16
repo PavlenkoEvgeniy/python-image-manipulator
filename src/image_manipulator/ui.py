@@ -31,12 +31,7 @@ from .resize import OutputFormat
 from .settings_store import clear_settings, load_settings, save_settings
 from .text_overlay import TextOverlay
 from .uifonts import apply_ui_family
-from .update_checker import (
-    check_for_update,
-    is_check_due,
-    load_last_check,
-    save_last_check,
-)
+from .update_checker import check_for_update
 
 logger = logging.getLogger(__name__)
 
@@ -1259,10 +1254,8 @@ class ManipulatorApp:
     # --- Update check ---
 
     def _maybe_check_updates(self) -> None:
-        """Run the automatic check when enabled and the daily interval elapsed."""
+        """Run the automatic check at startup when it is enabled."""
         if not self.check_updates_var.get():
-            return
-        if not is_check_due(load_last_check()):
             return
         self._start_update_check(manual=False)
 
@@ -1271,7 +1264,7 @@ class ManipulatorApp:
         self._start_update_check(manual=True)
 
     def _start_update_check(self, manual: bool) -> None:
-        """Start a background check; manual checks bypass the daily gate."""
+        """Start a background check; manual checks ignore the setting."""
         if self._update_check_running:
             return
         if not manual and not self.check_updates_var.get():
@@ -1292,7 +1285,6 @@ class ManipulatorApp:
             self._events.put(("update", manual, None, str(exc)))
             return
 
-        save_last_check()
         self._events.put(("update", manual, info, None))
 
     def _on_update_result(self, manual: bool, info, error) -> None:

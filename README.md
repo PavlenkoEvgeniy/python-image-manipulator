@@ -24,7 +24,7 @@ single application. Batch-process images in one pass:
 - 💽 **Settings persistence** — all settings are restored on the next launch
 - 📊 **Progress and errors** — processing runs in a background thread with a batch summary
 - 🌍 **Interface languages** — 11 languages, selectable in File → Language
-- 🔄 **Update check** — optional daily check for a newer release, with a direct download for your OS
+- 🔄 **Update check** — optional check for a newer release at every launch, with a direct download for your OS
 
 ## 🖼️ Screenshot
 
@@ -79,16 +79,15 @@ best-effort drafts and may need native review.
 ## 🔄 Update Check
 
 When enabled (the default), the application asks the GitHub Releases API at
-startup, at most once a day, whether a newer version exists. Only public release metadata is read — no
-personal data or usage information is sent. If a newer version is found, a
-dialog shows the direct download link for the running OS (Linux, Windows, or
-macOS); the button opens it in the default browser. When the platform asset is
-missing, the release page is used instead.
+every startup whether a newer version exists. Only public release metadata is
+read — no personal data or usage information is sent. If a newer version is
+found, a dialog shows the direct download link for the running OS (Linux,
+Windows, or macOS); the button opens it in the default browser. When the
+platform asset is missing, the release page is used instead.
 
 Turn the automatic check off under **Help → Check for Updates Automatically**.
 **Help → Check for Updates…** runs a check on demand. Automatic failures are
-silent; manual failures are reported. The time of the last successful check is
-kept in `update_check.json` next to `settings.json`.
+silent; manual failures are reported.
 
 ## 📦 Download
 
