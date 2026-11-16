@@ -23,7 +23,7 @@ single application. Batch-process images in one pass:
 - 🧭 **Orientation** — EXIF rotation is baked into the pixels before resizing
 - 💽 **Settings persistence** — all settings are restored on the next launch
 - 📊 **Progress and errors** — processing runs in a background thread with a batch summary
-- 🌍 **Interface languages** — 11 languages, selectable in File → Language
+- 🌍 **Interface languages** — 16 languages, selectable in File → Language
 - 🔄 **Update check** — optional check for a newer release at every launch, with a direct download for your OS
 
 ## 🖼️ Screenshot
@@ -223,7 +223,7 @@ default while the remaining settings load as-is.
 
 ## ℹ️ About
 
-- **Version:** 1.7.1
+- **Version:** 1.8.0
 - **License:** MIT
 - **Author:** Pavlenko Evgeniy
 - **Email:** [pavlenkoevgeniy85@gmail.com](mailto:pavlenkoevgeniy85@gmail.com)
