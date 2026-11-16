@@ -106,7 +106,7 @@ class ManipulatorApp:
 
     def _setup_window(self) -> None:
         """Configure the main window."""
-        self.root.title(config.name)
+        self.root.title(f"{config.name} v{config.version}")
         self.root.geometry(f"{config.window_width}x{config.window_height}")
         self.root.minsize(920, 680)
 
