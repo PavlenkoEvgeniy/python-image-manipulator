@@ -33,6 +33,11 @@ Update 2026-11-15: Tagalog (`tl`, also matched from the `fil` locale code) was
 added as the eleventh language. The rationale and the shaping constraint are
 unchanged.
 
+Update 2026-11-16: Turkish (`tr`), Dutch (`nl`), Polish (`pl`), Ukrainian
+(`uk`) and Indonesian (`id`, also matched from the legacy `in` locale code)
+were added as languages twelve through sixteen. All are Latin or Cyrillic and
+need no text shaping.
+
 ## Consequences
 
 - No external dependency, no `msgfmt`, and no per-OS build tooling.

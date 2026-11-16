@@ -66,8 +66,8 @@ folder, the home directory is used.
 ## 🌍 Interface Languages
 
 The interface is available in English, Russian, Spanish, French, German,
-Portuguese (Brazil), Italian, Chinese (Simplified), Japanese, Korean, and
-Tagalog (Filipino).
+Portuguese (Brazil), Italian, Chinese (Simplified), Japanese, Korean, Tagalog
+(Filipino), Turkish, Dutch, Polish, Ukrainian, and Indonesian.
 Choose a language under **File → Language**; it applies after the application
 is restarted. On the first launch the language is taken from the OS locale and
 falls back to English.

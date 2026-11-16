@@ -30,7 +30,7 @@ class Language:
     preferred_fonts: Tuple[str, ...] = ()
 
 
-# Eleven widely used desktop languages. Hindi and Arabic are deliberately absent:
+# Sixteen widely used desktop languages. Hindi and Arabic are deliberately absent:
 # Tk 8.6 does not shape Devanagari or Arabic scripts, so they would render
 # broken on every platform. CJK, Latin and Cyrillic need no shaping.
 LANGUAGES: Tuple[Language, ...] = (
@@ -60,6 +60,11 @@ LANGUAGES: Tuple[Language, ...] = (
         ("Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans KR"),
     ),
     Language("tl", "Tagalog", "Tagalog"),
+    Language("tr", "Türkçe", "Turkish"),
+    Language("nl", "Nederlands", "Dutch"),
+    Language("pl", "Polski", "Polish"),
+    Language("uk", "Українська", "Ukrainian"),
+    Language("id", "Bahasa Indonesia", "Indonesian"),
 )
 
 LANGUAGES_BY_CODE: Dict[str, Language] = {language.code: language for language in LANGUAGES}
@@ -201,6 +206,9 @@ def match_locale(value: str) -> Optional[str]:
     if language == "fil":
         # Filipino and Tagalog share one catalog; OS locales use both codes.
         return "tl"
+    if language == "in":
+        # POSIX and some Windows locales still report the old Indonesian code.
+        return "id"
     if language in LANGUAGES_BY_CODE:
         return language
     return None

@@ -17,6 +17,11 @@ EXPECTED_CODES = [
     "ja",
     "ko",
     "tl",
+    "tr",
+    "nl",
+    "pl",
+    "uk",
+    "id",
 ]
 
 
@@ -32,7 +37,7 @@ def _placeholders(text: str) -> set:
 class TestLanguages:
     """The supported language set."""
 
-    def test_eleven_languages_including_english_and_russian(self):
+    def test_every_supported_language_is_listed_in_order(self):
         assert [language.code for language in i18n.LANGUAGES] == EXPECTED_CODES
 
     def test_native_names_are_unique(self):
@@ -144,6 +149,16 @@ class TestDetection:
     def test_tagalog_accepts_both_locale_codes(self):
         assert i18n.detect_system_language({"LANG": "tl_PH.UTF-8"}) == "tl"
         assert i18n.detect_system_language({"LANG": "fil_PH.UTF-8"}) == "tl"
+
+    def test_new_latin_and_cyrillic_locales(self):
+        assert i18n.detect_system_language({"LANG": "tr_TR.UTF-8"}) == "tr"
+        assert i18n.detect_system_language({"LANG": "nl_NL.UTF-8"}) == "nl"
+        assert i18n.detect_system_language({"LANG": "pl_PL.UTF-8"}) == "pl"
+        assert i18n.detect_system_language({"LANG": "uk_UA.UTF-8"}) == "uk"
+
+    def test_indonesian_accepts_both_locale_codes(self):
+        assert i18n.detect_system_language({"LANG": "id_ID.UTF-8"}) == "id"
+        assert i18n.detect_system_language({"LANG": "in_ID.UTF-8"}) == "id"
 
     def test_unknown_locale_falls_back(self):
         assert i18n.detect_system_language({}) == config.default_language
