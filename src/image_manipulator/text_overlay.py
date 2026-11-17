@@ -7,7 +7,7 @@ import sys
 from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
-from typing import ClassVar, Optional, Union
+from typing import Any, ClassVar, Optional, Union, cast
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -118,25 +118,26 @@ def _windows_font_files() -> list[tuple[str, Path]]:
         Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows" / "Fonts"
     )
     entries = []
+    # winreg exists only on Windows. Casting the module to Any keeps the
+    # Windows-only attributes out of the cross-platform type check.
+    registry = cast(Any, winreg)
     keys = (
         (
-            winreg.HKEY_LOCAL_MACHINE,  # type: ignore[attr-defined]
+            registry.HKEY_LOCAL_MACHINE,
             r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
         ),
         (
-            winreg.HKEY_CURRENT_USER,  # type: ignore[attr-defined]
+            registry.HKEY_CURRENT_USER,
             r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
         ),
     )
     for hive, key_name in keys:
         try:
-            with winreg.OpenKey(hive, key_name) as key:  # type: ignore[attr-defined]
+            with registry.OpenKey(hive, key_name) as key:
                 index = 0
                 while True:
                     try:
-                        name, value, _ = winreg.EnumValue(  # type: ignore[attr-defined]
-                            key, index
-                        )
+                        name, value, _ = registry.EnumValue(key, index)
                     except OSError:
                         break
                     index += 1
