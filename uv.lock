@@ -576,7 +576,6 @@ wheels = [
 
 [[package]]
 name = "image-manipulator"
-version = "1.8.27"
 source = { editable = "." }
 dependencies = [
     { name = "pillow" },
