@@ -68,6 +68,7 @@
   "status.settings_reset": "Configurações redefinidas para os padrões",
   "status.processing": "Processando…",
   "status.processing_item": "Processando {index}/{total}: {name}",
+  "status.batch_failed": "O processamento em lote foi interrompido: {error}",
   "status.done": "Concluído: {success} de {total} processadas",
   "status.partial": "Processadas {success} de {total}; {failed} com falha",
   "dialog.ok": "OK",

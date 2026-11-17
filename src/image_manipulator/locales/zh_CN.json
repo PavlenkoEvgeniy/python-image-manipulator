@@ -68,6 +68,7 @@
   "status.settings_reset": "设置已重置为默认值",
   "status.processing": "正在处理…",
   "status.processing_item": "正在处理 {index}/{total}：{name}",
+  "status.batch_failed": "批处理提前停止：{error}",
   "status.done": "完成：已处理 {success}/{total}",
   "status.partial": "已处理 {success}/{total}；失败 {failed}",
   "dialog.ok": "确定",

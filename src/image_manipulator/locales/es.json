@@ -68,6 +68,7 @@
   "status.settings_reset": "Ajustes restablecidos a los valores predeterminados",
   "status.processing": "Procesando…",
   "status.processing_item": "Procesando {index}/{total}: {name}",
+  "status.batch_failed": "El procesamiento por lotes se detuvo antes de tiempo: {error}",
   "status.done": "Hecho: procesadas {success} de {total}",
   "status.partial": "Procesadas {success} de {total}; errores: {failed}",
   "dialog.ok": "Aceptar",

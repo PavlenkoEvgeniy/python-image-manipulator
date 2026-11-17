@@ -68,6 +68,7 @@
   "status.settings_reset": "설정이 기본값으로 초기화되었습니다",
   "status.processing": "처리 중…",
   "status.processing_item": "처리 중 {index}/{total}: {name}",
+  "status.batch_failed": "일괄 처리가 중단되었습니다: {error}",
   "status.done": "완료: {success}/{total} 처리됨",
   "status.partial": "{success}/{total} 처리됨; {failed}개 실패",
   "dialog.ok": "확인",

@@ -68,6 +68,7 @@
   "status.settings_reset": "Ayarlar varsayılanlara sıfırlandı",
   "status.processing": "İşleniyor…",
   "status.processing_item": "İşleniyor {index}/{total}: {name}",
+  "status.batch_failed": "Toplu işleme erken durdu: {error}",
   "status.done": "Tamamlandı: {total} öğeden {success} işlendi",
   "status.partial": "{total} öğeden {success} işlendi; {failed} başarısız",
   "dialog.ok": "Tamam",

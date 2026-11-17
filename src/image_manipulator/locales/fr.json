@@ -68,6 +68,7 @@
   "status.settings_reset": "Paramètres réinitialisés aux valeurs par défaut",
   "status.processing": "Traitement…",
   "status.processing_item": "Traitement {index}/{total} : {name}",
+  "status.batch_failed": "Le traitement par lots s'est arrêté prématurément : {error}",
   "status.done": "Terminé : {success} sur {total} traitées",
   "status.partial": "Traitées {success} sur {total} ; échecs : {failed}",
   "dialog.ok": "OK",

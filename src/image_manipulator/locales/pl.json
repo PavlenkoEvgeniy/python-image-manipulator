@@ -68,6 +68,7 @@
   "status.settings_reset": "Przywrócono ustawienia domyślne",
   "status.processing": "Przetwarzanie…",
   "status.processing_item": "Przetwarzanie {index}/{total}: {name}",
+  "status.batch_failed": "Przetwarzanie wsadowe zostało przerwane: {error}",
   "status.done": "Gotowo: przetworzono {success} z {total}",
   "status.partial": "Przetworzono {success} z {total}; niepowodzeń: {failed}",
   "dialog.ok": "OK",

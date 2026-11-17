@@ -1074,10 +1074,13 @@ class ManipulatorApp:
                     success += 1
                 elif result.error:
                     errors.append(result.error)
-        except Exception:
+        except Exception as exc:
             # The UI waits for the completion event to unlock the controls;
-            # never leave it hanging, whatever went wrong in the loop.
+            # never leave it hanging, whatever went wrong in the loop. Report
+            # the failure in the error list so the completion dialog cannot
+            # claim success when files were skipped.
             logger.exception("Batch worker stopped early")
+            errors.append(tr("status.batch_failed", error=exc))
         finally:
             self._events.put(
                 ("complete", success, total, errors, output_dir, overwrite)

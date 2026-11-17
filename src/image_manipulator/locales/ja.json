@@ -68,6 +68,7 @@
   "status.settings_reset": "設定を既定値にリセットしました",
   "status.processing": "処理中…",
   "status.processing_item": "処理中 {index}/{total}: {name}",
+  "status.batch_failed": "バッチ処理が途中で停止しました: {error}",
   "status.done": "完了: {success}/{total} を処理しました",
   "status.partial": "{success}/{total} を処理しました。失敗: {failed}",
   "dialog.ok": "OK",

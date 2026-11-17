@@ -68,6 +68,7 @@
   "status.settings_reset": "Настройки сброшены к значениям по умолчанию",
   "status.processing": "Обработка…",
   "status.processing_item": "Обработка {index}/{total}: {name}",
+  "status.batch_failed": "Пакетная обработка прервалась: {error}",
   "status.done": "Готово: обработано {success} из {total}",
   "status.partial": "Обработано {success} из {total}; ошибок: {failed}",
   "dialog.ok": "ОК",

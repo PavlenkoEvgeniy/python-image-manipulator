@@ -68,6 +68,7 @@
   "status.settings_reset": "Na-reset ang mga setting sa default",
   "status.processing": "Pinoproseso…",
   "status.processing_item": "Pinoproseso {index}/{total}: {name}",
+  "status.batch_failed": "Huminto nang maaga ang batch processing: {error}",
   "status.done": "Tapos: {success} sa {total} ang naproseso",
   "status.partial": "Naproseso ang {success} sa {total}; {failed} ang nabigo",
   "dialog.ok": "OK",

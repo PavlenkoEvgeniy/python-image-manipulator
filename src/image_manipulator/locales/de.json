@@ -68,6 +68,7 @@
   "status.settings_reset": "Einstellungen auf Standardwerte zurückgesetzt",
   "status.processing": "Verarbeitung…",
   "status.processing_item": "Verarbeite {index}/{total}: {name}",
+  "status.batch_failed": "Die Stapelverarbeitung wurde vorzeitig beendet: {error}",
   "status.done": "Fertig: {success} von {total} verarbeitet",
   "status.partial": "{success} von {total} verarbeitet; {failed} fehlgeschlagen",
   "dialog.ok": "OK",

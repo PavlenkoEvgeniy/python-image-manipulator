@@ -68,6 +68,7 @@
   "status.settings_reset": "Settings reset to defaults",
   "status.processing": "Processing…",
   "status.processing_item": "Processing {index}/{total}: {name}",
+  "status.batch_failed": "Batch processing stopped early: {error}",
   "status.done": "Done: {success} of {total} processed",
   "status.partial": "Processed {success} of {total}; {failed} failed",
   "dialog.ok": "OK",

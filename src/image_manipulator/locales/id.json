@@ -68,6 +68,7 @@
   "status.settings_reset": "Pengaturan dikembalikan ke bawaan",
   "status.processing": "Memproses…",
   "status.processing_item": "Memproses {index}/{total}: {name}",
+  "status.batch_failed": "Pemrosesan batch berhenti lebih awal: {error}",
   "status.done": "Selesai: {success} dari {total} diproses",
   "status.partial": "Diproses {success} dari {total}; {failed} gagal",
   "dialog.ok": "OK",

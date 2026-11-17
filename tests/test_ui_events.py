@@ -84,6 +84,33 @@ class TestPollLoop:
         assert "Event polling failed" in caplog.text
 
 
+class TestUnexpectedWorkerFailure:
+    def test_failure_is_reported_in_the_completion_event(self, caplog):
+        class BrokenManipulator:
+            def process_path(self, *args, **kwargs):
+                raise RuntimeError("boom")
+
+        app = SimpleNamespace(_events=queue.Queue())
+
+        with caplog.at_level(logging.ERROR, logger=ui.logger.name):
+            ui.ManipulatorApp._process_worker(
+                app, ["a.png", "b.png"], BrokenManipulator(), "/tmp", False
+            )
+
+        events = []
+        while not app._events.empty():
+            events.append(app._events.get_nowait())
+        completes = [event for event in events if event[0] == "complete"]
+
+        assert len(completes) == 1
+        _, success, total, errors, output_dir, overwrite = completes[0]
+        assert (success, total) == (0, 2)
+        assert errors
+        assert "boom" in errors[0]
+        assert (output_dir, overwrite) == ("/tmp", False)
+        assert "Batch worker stopped early" in caplog.text
+
+
 class TestSecondBatchRun:
     def test_processes_and_reports_completion_every_run(self, tmp_path):
         sources = []

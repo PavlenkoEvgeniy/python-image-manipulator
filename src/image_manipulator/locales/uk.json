@@ -68,6 +68,7 @@
   "status.settings_reset": "Налаштування скинуто до типових",
   "status.processing": "Обробка…",
   "status.processing_item": "Обробка {index}/{total}: {name}",
+  "status.batch_failed": "Пакетна обробка перервалася: {error}",
   "status.done": "Готово: оброблено {success} з {total}",
   "status.partial": "Оброблено {success} з {total}; невдалих: {failed}",
   "dialog.ok": "Гаразд",

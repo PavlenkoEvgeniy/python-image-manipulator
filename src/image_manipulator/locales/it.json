@@ -68,6 +68,7 @@
   "status.settings_reset": "Impostazioni ripristinate ai valori predefiniti",
   "status.processing": "Elaborazione…",
   "status.processing_item": "Elaborazione {index}/{total}: {name}",
+  "status.batch_failed": "L'elaborazione batch si è interrotta: {error}",
   "status.done": "Completato: {success} di {total} elaborate",
   "status.partial": "Elaborate {success} di {total}; {failed} non riuscite",
   "dialog.ok": "OK",

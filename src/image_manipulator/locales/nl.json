@@ -68,6 +68,7 @@
   "status.settings_reset": "Instellingen hersteld naar de standaardwaarden",
   "status.processing": "Verwerken…",
   "status.processing_item": "Bezig met {index}/{total}: {name}",
+  "status.batch_failed": "Batchverwerking is vroegtijdig gestopt: {error}",
   "status.done": "Klaar: {success} van {total} verwerkt",
   "status.partial": "{success} van {total} verwerkt; {failed} mislukt",
   "dialog.ok": "OK",
