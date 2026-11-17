@@ -15,8 +15,8 @@
   file used by the installer or executable shell.
 - **Output folder** — the directory that receives processed images when originals
   are not overwritten. Its default name is language-neutral.
-- **Update check** — an optional, at most daily query of the project's public
-  release metadata to learn whether a newer version exists. It sends no user data.
+- **Update check** — an optional query of the project's public release metadata at
+  application startup to learn whether a newer version exists. It sends no user data.
 - **Release asset** — a downloadable file attached to a release. The direct
   download link in an update check points at the asset for the running operating
   system, falling back to the release page when that asset is absent.

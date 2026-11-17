@@ -1,28 +1,12 @@
 """Tests for interface language catalogs, lookup and detection."""
 
 import string
+from pathlib import Path
 
 from image_manipulator import i18n
 from image_manipulator.config import config
 
-EXPECTED_CODES = [
-    "en",
-    "ru",
-    "es",
-    "fr",
-    "de",
-    "pt_BR",
-    "it",
-    "zh_CN",
-    "ja",
-    "ko",
-    "tl",
-    "tr",
-    "nl",
-    "pl",
-    "uk",
-    "id",
-]
+EXPECTED_CODES = [language.code for language in i18n.LANGUAGES]
 
 
 def _placeholders(text: str) -> set:
@@ -35,8 +19,12 @@ def _placeholders(text: str) -> set:
 class TestLanguages:
     """The supported language set."""
 
-    def test_every_supported_language_is_listed_in_order(self):
-        assert [language.code for language in i18n.LANGUAGES] == EXPECTED_CODES
+    def test_catalog_files_match_the_language_list(self):
+        catalog_codes = sorted(
+            path.stem for path in Path(i18n.CATALOG_DIR).glob("*.json")
+        )
+
+        assert sorted(EXPECTED_CODES) == catalog_codes
 
     def test_native_names_are_unique(self):
         names = [language.native_name for language in i18n.LANGUAGES]

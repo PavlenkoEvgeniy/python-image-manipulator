@@ -166,15 +166,24 @@ and deletes the settings file.
 
 ```
 src/image_manipulator/
-├── app.py             # application bootstrap and root window
-├── config.py          # constants and default values
-├── resize.py          # dimension calculation and resampling (Pillow)
-├── text_overlay.py    # font selection, styles, and text drawing
-├── pipeline.py        # load → resize → text → save
-├── settings_store.py  # versioned JSON settings
-├── positioning.py     # centering the window and dialogs
-├── dialogs.py         # About and modal messages
-└── ui.py              # Tkinter main window
+├── app.py                # application bootstrap and root window
+├── config.py             # constants and default values
+├── formats.py            # image format capabilities and suffixes
+├── resize.py             # dimension calculation and resampling (Pillow)
+├── text_overlay.py       # font selection, styles, and text drawing
+├── pipeline.py           # load → resize → text → save
+├── settings_store.py     # versioned JSON settings
+├── settings_snapshot.py  # typed settings shared by load/save/reset
+├── debounce.py           # Tk after() debouncer
+├── ui_events.py          # typed worker events
+├── positioning.py        # centering the window and dialogs
+├── dialogs.py            # About and modal messages
+├── i18n.py               # language catalogs and translation helpers
+├── uifonts.py            # UI font family selection
+├── update_checker.py     # optional GitHub release check
+├── icon.py               # bundled icon loading
+├── logging_config.py     # logging setup
+└── ui.py                 # Tkinter main window
 ```
 
 Processing logic is independent of Tkinter: `resize.py`, `text_overlay.py`, and

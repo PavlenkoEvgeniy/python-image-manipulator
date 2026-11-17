@@ -45,7 +45,8 @@ need no text shaping.
   headlessly on every platform.
 - Translations are plain UTF-8 JSON and can be reviewed or machine-drafted
   without translation tooling.
-- Adding a language means one catalog file plus one entry in the language list.
+- Adding a language means one catalog file plus one entry in the language list;
+  `tests/test_i18n.py` checks that the two sets match.
 - Missing or malformed catalogs degrade to English instead of failing startup.
 - Switching languages requires a restart; live switching would mean rebuilding
   the widget tree and preserving loaded images and widget state.
