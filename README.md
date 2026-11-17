@@ -4,10 +4,10 @@
 
 # 🖼️ Image Manipulator
 
-Combines two tools — **Image Resizer Pro** and **Image Text Overlay** — into a
-single application. Batch-process images in one pass:
-
-**load → resize → add text → save**
+An awesome program for photo processing — it lets you add dates to your photos.
+It can process a huge number of images at once and resize them simultaneously.
+You can even set it to rotate photos to a horizontal orientation before adding
+the date, making them look just like they came straight from a camera.
 
 ## ✨ Features
 
