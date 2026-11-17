@@ -3,7 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 
 @dataclass
@@ -110,7 +110,7 @@ class AppConfig:
         """Default output directory name."""
         return "processed_images"
 
-    def default_output_directory(self, home: Optional[str] = None) -> str:
+    def default_output_directory(self, home: str | None = None) -> str:
         """Default output folder: ``processed_images`` on the user's Desktop.
 
         Falls back to the home directory when there is no Desktop folder, for

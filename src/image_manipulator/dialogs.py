@@ -4,7 +4,7 @@ import logging
 import tkinter as tk
 import webbrowser
 from tkinter import ttk
-from typing import ClassVar, Union
+from typing import ClassVar
 
 from PIL import ImageTk
 
@@ -15,7 +15,7 @@ from .icon import load_icon_image
 from .positioning import center_over_parent
 from .uifonts import ui_font
 
-Window = Union[tk.Tk, tk.Toplevel]
+Window = tk.Tk | tk.Toplevel
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 from PIL import Image, ImageOps
 
@@ -38,8 +38,8 @@ class ProcessResult:
     """Result of processing a single image."""
 
     success: bool
-    output_path: Optional[Path] = None
-    error: Optional[str] = None
+    output_path: Path | None = None
+    error: str | None = None
 
 
 def _normalize_high_depth(image: Image.Image) -> Image.Image:
@@ -99,7 +99,7 @@ def _normalize_mode(image: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
-def load_image(path: Union[str, Path]) -> tuple[Image.Image, Optional[bytes]]:
+def load_image(path: str | Path) -> tuple[Image.Image, bytes | None]:
     """Load an image with its display orientation baked into the pixels.
 
     Viewers display an image according to its EXIF Orientation tag, which may
@@ -172,10 +172,10 @@ def _prepare_for_save(image: Image.Image, pil_format: str) -> Image.Image:
 
 def save_image(
     image: Image.Image,
-    path: Union[str, Path],
+    path: str | Path,
     pil_format: str,
     jpeg_quality: int = 95,
-    icc_profile: Optional[bytes] = None,
+    icc_profile: bytes | None = None,
 ) -> None:
     """Save an image in the given Pillow format with format-aware options.
 
@@ -245,7 +245,7 @@ class ImageManipulator:
         output_format: OutputFormat = OutputFormat.JPEG,
         jpeg_quality: int = config.default_jpeg_quality,
         add_dimensions_to_filename: bool = config.default_add_dimensions_to_filename,
-        text_overlay: Optional[TextOverlay] = None,
+        text_overlay: TextOverlay | None = None,
     ):
         self.target_width = target_width
         self.target_height = target_height
@@ -292,7 +292,7 @@ class ImageManipulator:
     def resolve_output_path(
         self,
         input_path: Path,
-        output_dir: Union[str, Path],
+        output_dir: str | Path,
         rendered: Image.Image,
         overwrite: bool,
     ) -> tuple[Path, str]:
@@ -339,8 +339,8 @@ class ImageManipulator:
 
     def process_path(
         self,
-        input_path: Union[str, Path],
-        output_dir: Union[str, Path],
+        input_path: str | Path,
+        output_dir: str | Path,
         overwrite: bool = False,
     ) -> ProcessResult:
         """Load, resize, overlay text and save one image.

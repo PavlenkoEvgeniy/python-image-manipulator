@@ -40,9 +40,10 @@ make pyinstaller                 # PyInstaller with per-OS icon and package data
 python tools/generate_icon.py    # regenerate assets/icon.{png,ico,icns} + package icon
 ```
 
-CI (`.github/workflows/build.yml`) runs tests on Ubuntu, Windows, and macOS with
-Python 3.14, builds PyInstaller binaries, and publishes a release when a `v*` tag is
-pushed. Releases contain exactly three binaries; GitHub adds the source archives
+CI (`.github/workflows/build.yml`) runs tests on Ubuntu with Python 3.11 and 3.14
+and on Windows and macOS with Python 3.14, builds PyInstaller binaries, and
+publishes a release when a `v*` tag is pushed. The supported floor is Python 3.11;
+3.9 and 3.10 are end-of-life. Releases contain exactly three binaries; GitHub adds the source archives
 automatically.
 
 ## Architecture

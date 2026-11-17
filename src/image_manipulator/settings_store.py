@@ -13,7 +13,7 @@ import os
 import re
 import sys
 import tempfile
-from typing import Any, Optional
+from typing import Any
 
 from .config import config
 from .i18n import detect_system_language, validate_language
@@ -188,7 +188,7 @@ def validate_settings(raw: dict) -> dict:
     return settings
 
 
-def save_settings(settings: dict, path: Optional[str] = None) -> bool:
+def save_settings(settings: dict, path: str | None = None) -> bool:
     """Save settings atomically to the Settings file.
 
     Args:
@@ -218,7 +218,7 @@ def save_settings(settings: dict, path: Optional[str] = None) -> bool:
         return False
 
 
-def load_settings(path: Optional[str] = None) -> Optional[dict]:
+def load_settings(path: str | None = None) -> dict | None:
     """Load and validate Saved settings.
 
     Args:
@@ -249,7 +249,7 @@ def load_settings(path: Optional[str] = None) -> Optional[dict]:
     return validate_settings(raw)
 
 
-def clear_settings(path: Optional[str] = None) -> bool:
+def clear_settings(path: str | None = None) -> bool:
     """Delete the Settings file (Reset settings).
 
     Args:

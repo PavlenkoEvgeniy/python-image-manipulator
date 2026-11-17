@@ -6,13 +6,13 @@ import re
 import sys
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Union, cast
+from typing import Any, ClassVar, cast
 
 from PIL import Image, ImageDraw, ImageFont
 
 from .config import config
 
-FontType = Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
+FontType = ImageFont.FreeTypeFont | ImageFont.ImageFont
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ _ALLOWED_FONT_SUFFIXES = {
     "thin",
 }
 _FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
-_PLATFORM_FONT_FILES: Optional[list[tuple[str, Path]]] = None
+_PLATFORM_FONT_FILES: list[tuple[str, Path]] | None = None
 _FONT_CANDIDATE_CACHE: dict[tuple[str, str], list[str]] = {}
 _WARNED_UNRESOLVED_FAMILIES: set[str] = set()
 
@@ -214,8 +214,8 @@ class TextOverlay:
         self,
         text: str = "",
         color: str = "#FFFFFF",
-        font_family: Optional[str] = None,
-        font_path: Optional[str] = None,
+        font_family: str | None = None,
+        font_path: str | None = None,
         font_size: int = 40,
         font_style: str = "Normal",
         position: str = "bottom right",
@@ -248,14 +248,14 @@ class TextOverlay:
     # --- Font resolution ---
 
     @staticmethod
-    def _try_load_font(name: Union[str, Path], size: int) -> Optional[FontType]:
+    def _try_load_font(name: str | Path, size: int) -> FontType | None:
         """Load a font file, returning None when the path cannot be opened."""
         try:
             return ImageFont.truetype(name, size)
         except Exception:
             return None
 
-    def _load_system_font(self, size: int) -> Optional[FontType]:
+    def _load_system_font(self, size: int) -> FontType | None:
         """Load a system font by family name, trying the styled variant first."""
         family = (self.font_family or "").strip()
         if not family:
@@ -396,7 +396,7 @@ class TextOverlay:
         A font that loads but draws nothing for the text (its glyph set does
         not cover it) is skipped in favour of the next candidate.
         """
-        last: Optional[FontType] = None
+        last: FontType | None = None
         for font in self._font_candidates(size):
             last = font
             if self._renders_text(font, text):
@@ -512,7 +512,7 @@ class TextOverlay:
 
     # --- Drawing ---
 
-    def apply_text(self, image: Image.Image) -> Optional[Image.Image]:
+    def apply_text(self, image: Image.Image) -> Image.Image | None:
         """Draw the text onto a copy of the image.
 
         Args:

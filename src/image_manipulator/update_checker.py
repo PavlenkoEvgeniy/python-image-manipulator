@@ -12,8 +12,9 @@ import re
 import shutil
 import sys
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
 from . import __version__
 
@@ -59,7 +60,7 @@ class UpdateInfo:
     release_url: str
 
 
-def parse_version(text: str) -> Optional[tuple[int, ...]]:
+def parse_version(text: str) -> tuple[int, ...] | None:
     """Extract the first dotted numeric version from a tag or version string."""
     match = _VERSION_PATTERN.search(text or "")
     if match is None:
@@ -76,7 +77,7 @@ def is_newer(candidate: str, current: str = __version__) -> bool:
     return newer > current_version
 
 
-def platform_asset_key(platform: Optional[str] = None) -> str:
+def platform_asset_key(platform: str | None = None) -> str:
     """Map a ``sys.platform`` value to the release asset name fragment."""
     value = sys.platform if platform is None else platform
     if value.startswith("win"):
@@ -88,7 +89,7 @@ def platform_asset_key(platform: Optional[str] = None) -> str:
 
 def linux_package_kind(
     os_release: str = "/etc/os-release",
-    which: Callable[[str], Optional[str]] = shutil.which,
+    which: Callable[[str], str | None] = shutil.which,
 ) -> str:
     """Return ``deb`` or ``rpm`` for the running Linux distribution."""
     identifiers = set()
@@ -128,9 +129,9 @@ def _https_assets(assets: Any, key: str) -> list:
 
 def pick_download_url(
     assets: Any,
-    platform: Optional[str] = None,
+    platform: str | None = None,
     release_url: str = RELEASES_PAGE,
-    package_kind: Optional[str] = None,
+    package_kind: str | None = None,
 ) -> str:
     """Pick the direct installer URL for the platform.
 
@@ -163,10 +164,10 @@ def pick_download_url(
 
 def parse_latest_release(
     payload: Any,
-    platform: Optional[str] = None,
+    platform: str | None = None,
     current_version: str = __version__,
-    package_kind: Optional[str] = None,
-) -> Optional[UpdateInfo]:
+    package_kind: str | None = None,
+) -> UpdateInfo | None:
     """Turn a GitHub ``releases/latest`` payload into UpdateInfo.
 
     Returns None when the payload is malformed or the release is not newer.
@@ -223,9 +224,9 @@ def fetch_latest_release(timeout: float = REQUEST_TIMEOUT_SECONDS) -> dict[str, 
 
 
 def check_for_update(
-    platform: Optional[str] = None,
+    platform: str | None = None,
     timeout: float = REQUEST_TIMEOUT_SECONDS,
-) -> Optional[UpdateInfo]:
+) -> UpdateInfo | None:
     """Run one network check and return update information when available."""
     payload = fetch_latest_release(timeout=timeout)
     return parse_latest_release(payload, platform=platform)

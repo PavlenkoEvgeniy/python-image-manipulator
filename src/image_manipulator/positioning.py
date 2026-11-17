@@ -1,9 +1,8 @@
 """Window positioning helpers shared by the main window and dialogs."""
 
 import tkinter as tk
-from typing import Optional, Union
 
-Window = Union[tk.Tk, tk.Toplevel]
+Window = tk.Tk | tk.Toplevel
 
 
 def centered_origin(
@@ -17,7 +16,7 @@ def centered_origin(
 
 def choose_monitor(
     monitors: list[tuple[int, int, int, int]], pointer: tuple[int, int]
-) -> Optional[tuple[int, int, int, int]]:
+) -> tuple[int, int, int, int] | None:
     """Pick the monitor rectangle that contains the given point."""
     px, py = pointer
     for x, y, width, height in monitors:
@@ -45,7 +44,7 @@ def center_on_screen(
     window: Window,
     width: int,
     height: int,
-    monitors: Optional[list[tuple[int, int, int, int]]] = None,
+    monitors: list[tuple[int, int, int, int]] | None = None,
 ) -> None:
     """Position and size a window centered inside the monitor with the pointer.
 
@@ -78,8 +77,8 @@ def center_over_parent(
     *,
     window: Window,
     parent: Window,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
+    width: int | None = None,
+    height: int | None = None,
 ) -> None:
     """Position a window centered over its parent window.
 

@@ -8,7 +8,6 @@ import threading
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import colorchooser, filedialog, messagebox, ttk
-from typing import Optional
 
 from PIL import Image, ImageTk
 
@@ -73,18 +72,18 @@ class ManipulatorApp:
         # State
         self.image_paths: list[str] = []
         self.current_index: int = -1
-        self.original_image: Optional[Image.Image] = None
-        self.font_path: Optional[str] = None
-        self._preview_after_id: Optional[str] = None
+        self.original_image: Image.Image | None = None
+        self.font_path: str | None = None
+        self._preview_after_id: str | None = None
         self._preview_generation = 0
-        self._save_after_id: Optional[str] = None
+        self._save_after_id: str | None = None
         self._processing = False
         self._cancel_event = threading.Event()
         self._applying_preset = False
         self._resetting = False
         self._update_check_running = False
         self._events: queue.Queue = queue.Queue()
-        self._window_icon: Optional[ImageTk.PhotoImage] = None
+        self._window_icon: ImageTk.PhotoImage | None = None
 
         self._setup_window()
         self._set_window_icon()
@@ -915,7 +914,7 @@ class ManipulatorApp:
             "overwrite": bool(self.overwrite_var.get()),
         }
 
-    def _apply_saved_settings(self, saved: Optional[dict]) -> None:
+    def _apply_saved_settings(self, saved: dict | None) -> None:
         """Apply loaded Saved settings to the widgets; ignore None."""
         if not saved:
             return
@@ -1291,8 +1290,8 @@ class ManipulatorApp:
     def _int_value(
         var: tk.Variable,
         default: int,
-        minimum: Optional[int] = None,
-        maximum: Optional[int] = None,
+        minimum: int | None = None,
+        maximum: int | None = None,
     ) -> int:
         """Read an integer from a Tk variable, falling back to a default."""
         try:

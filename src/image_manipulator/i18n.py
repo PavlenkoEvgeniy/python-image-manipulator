@@ -12,7 +12,6 @@ import os
 import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Optional
 
 from .config import config
 
@@ -147,7 +146,7 @@ def get_language() -> str:
     return _active_language
 
 
-def language_info(code: Optional[str] = None) -> Language:
+def language_info(code: str | None = None) -> Language:
     """Return the Language record for a code (or for the active language)."""
     return LANGUAGES_BY_CODE[
         validate_language(code if code is not None else _active_language)
@@ -198,7 +197,7 @@ def _normalize_locale(value: str) -> str:
     return value.split(".", 1)[0].split("@", 1)[0].replace("-", "_")
 
 
-def match_locale(value: str) -> Optional[str]:
+def match_locale(value: str) -> str | None:
     """Map an OS locale string to a supported language code, or None."""
     normalized = _normalize_locale(value.strip())
     if not normalized:
@@ -254,7 +253,7 @@ def _os_locale_names() -> list:
     return names
 
 
-def detect_system_language(env: Optional[Mapping[str, str]] = None) -> str:
+def detect_system_language(env: Mapping[str, str] | None = None) -> str:
     """Pick the initial language from the OS locale.
 
     Args:

@@ -35,7 +35,7 @@ def lerp(
     a: tuple[int, int, int], b: tuple[int, int, int], t: float
 ) -> tuple[int, int, int]:
     """Linearly interpolate between two RGB colors."""
-    return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
+    return tuple(round(x + (y - x) * t) for x, y in zip(a, b, strict=False))
 
 
 def diagonal_gradient(size: int) -> Image.Image:

@@ -9,7 +9,6 @@ import contextlib
 import tkinter as tk
 import tkinter.font as tkfont
 from collections.abc import Iterable
-from typing import Optional, Union
 
 _DEFAULT_FAMILY = "Arial"
 
@@ -28,15 +27,15 @@ _active_family = _DEFAULT_FAMILY
 
 
 def ui_font(
-    size: int, weight: Optional[str] = None
-) -> Union[tuple[str, int], tuple[str, int, str]]:
+    size: int, weight: str | None = None
+) -> tuple[str, int] | tuple[str, int, str]:
     """Build a Tk font tuple in the active UI family."""
     if weight:
         return (_active_family, size, weight)
     return (_active_family, size)
 
 
-def apply_ui_family(root, candidates: Iterable[str]) -> Optional[str]:
+def apply_ui_family(root, candidates: Iterable[str]) -> str | None:
     """Apply the first installed preferred family, if any.
 
     Args:
