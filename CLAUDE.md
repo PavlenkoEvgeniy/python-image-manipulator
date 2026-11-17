@@ -173,6 +173,6 @@ A setting touches several layers:
   macOS `.dmg`/`.pkg`, and the release page when no matching asset exists.
 - The release job uploads the installer globs only. Do not use `artifacts/**/*` — it
   leaks the macOS `.app` bundle internals into release assets.
-- The version is duplicated in `src/image_manipulator/__init__.py`,
-  `config.AppConfig.version`, `pyproject.toml`, and `README.md`; keep them in sync for a
-  release.
+- The version has one source: `src/image_manipulator/__init__.py`. `config.AppConfig.version`
+  imports it and `pyproject.toml` reads it through `[tool.setuptools.dynamic]`; do not add
+  another literal.

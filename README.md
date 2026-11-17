@@ -230,7 +230,7 @@ default while the remaining settings load as-is.
 
 ## ℹ️ About
 
-- **Version:** 1.8.28
+- **Version:** [latest release](https://github.com/PavlenkoEvgeniy/python-image-manipulator/releases/latest)
 - **License:** MIT
 - **Author:** Pavlenko Evgeniy
 - **Email:** [pavlenkoevgeniy85@gmail.com](mailto:pavlenkoevgeniy85@gmail.com)

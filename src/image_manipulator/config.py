@@ -5,13 +5,15 @@ import sys
 from dataclasses import dataclass
 from typing import ClassVar
 
+from . import __version__ as _package_version
+
 
 @dataclass
 class AppConfig:
     """Application configuration shared by the UI and the pipeline."""
 
     name: str = "Image Manipulator"
-    version: str = "1.8.28"
+    version: str = _package_version
     default_language: str = "en"
     default_check_updates: bool = True
     window_width: int = 1100
