@@ -112,6 +112,61 @@ class TestUnexpectedWorkerFailure:
         assert "Batch worker stopped early" in caplog.text
 
 
+class TestPreviewWorker:
+    def test_worker_posts_the_rendered_image(self):
+        image = Image.new("RGB", (32, 24), "red")
+
+        class StubManipulator:
+            def render(self, source):
+                return source.copy()
+
+        app = SimpleNamespace(_events=queue.Queue())
+
+        ui.ManipulatorApp._preview_worker(app, 4, StubManipulator(), image)
+
+        _, generation, rendered, error = app._events.get_nowait()
+        assert generation == 4
+        assert rendered.size == image.size
+        assert error is None
+
+    def test_worker_posts_an_error_instead_of_raising(self):
+        class BrokenManipulator:
+            def render(self, source):
+                raise RuntimeError("preview failed")
+
+        app = SimpleNamespace(_events=queue.Queue())
+
+        ui.ManipulatorApp._preview_worker(
+            app, 2, BrokenManipulator(), Image.new("RGB", (8, 8))
+        )
+
+        _, generation, rendered, error = app._events.get_nowait()
+        assert generation == 2
+        assert rendered is None
+        assert isinstance(error, RuntimeError)
+
+    def test_stale_preview_is_ignored(self):
+        shown = []
+
+        class StubVar:
+            def set(self, value):
+                pass
+
+        app = SimpleNamespace(
+            _preview_generation=5,
+            output_size_var=StubVar(),
+            status_var=StubVar(),
+            _show_image=lambda image: shown.append(image),
+        )
+        image = Image.new("RGB", (8, 8), "red")
+
+        ui.ManipulatorApp._on_preview_ready(app, 4, image, None)
+        assert shown == []
+
+        ui.ManipulatorApp._on_preview_ready(app, 5, image, None)
+        assert shown == [image]
+
+
 class TestCloseDuringBatch:
     @staticmethod
     def _app():

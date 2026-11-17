@@ -75,6 +75,7 @@ class ManipulatorApp:
         self.original_image: Optional[Image.Image] = None
         self.font_path: Optional[str] = None
         self._preview_after_id: Optional[str] = None
+        self._preview_generation = 0
         self._save_after_id: Optional[str] = None
         self._processing = False
         self._cancel_event = threading.Event()
@@ -623,6 +624,7 @@ class ManipulatorApp:
 
     def _schedule_preview(self) -> None:
         """Schedule a debounced preview refresh."""
+        self._preview_generation += 1
         if self._preview_after_id is not None:
             try:
                 self.root.after_cancel(self._preview_after_id)
@@ -642,20 +644,57 @@ class ManipulatorApp:
             self._preview_after_id = None
 
     def _refresh_preview(self) -> None:
-        """Render the current settings on the current image and show it."""
+        """Start rendering the current settings in a background thread."""
         self._preview_after_id = None
+        self._preview_generation += 1
+        generation = self._preview_generation
 
         if self.original_image is None:
             self.output_size_var.set(tr("preview.output_size_empty"))
             return
 
+        # Building the manipulator reads Tk variables, so it must happen on
+        # the UI thread. Rendering itself is pure Pillow work and is moved off
+        # the UI thread to keep large images from freezing the window.
         try:
-            rendered = self._build_manipulator().render(self.original_image)
-        except Exception as e:
+            manipulator = self._build_manipulator()
+        except Exception as exc:
             logger.exception("Preview failed")
-            self.status_var.set(tr("status.preview_failed", error=e))
+            self.status_var.set(tr("status.preview_failed", error=exc))
             return
+        image = self.original_image
+        threading.Thread(
+            target=self._preview_worker,
+            args=(generation, manipulator, image),
+            daemon=True,
+        ).start()
 
+    def _preview_worker(
+        self,
+        generation: int,
+        manipulator: ImageManipulator,
+        image: Image.Image,
+    ) -> None:
+        """Render a preview off the UI thread and report through the queue."""
+        try:
+            rendered = manipulator.render(image)
+        except Exception as exc:
+            logger.exception("Preview failed")
+            self._events.put(("preview", generation, None, exc))
+            return
+        self._events.put(("preview", generation, rendered, None))
+
+    def _on_preview_ready(
+        self, generation: int, rendered, error
+    ) -> None:
+        """Show a preview result unless a newer request superseded it."""
+        if generation != self._preview_generation:
+            return
+        if error is not None:
+            self.status_var.set(tr("status.preview_failed", error=error))
+            return
+        if rendered is None:
+            return
         self.output_size_var.set(
             tr("preview.output_size", width=rendered.width, height=rendered.height)
         )
@@ -799,6 +838,7 @@ class ManipulatorApp:
         """Clear the currently loaded image and the preview."""
         self.current_index = -1
         self.original_image = None
+        self._preview_generation += 1
         self.current_name_var.set(tr("preview.no_image"))
         self.output_size_var.set(tr("preview.output_size_empty"))
         self.preview_canvas.delete("all")
@@ -1147,6 +1187,8 @@ class ManipulatorApp:
             self.status_var.set(event[1])
         elif event[0] == "complete":
             self._on_processing_complete(*event[1:])
+        elif event[0] == "preview":
+            self._on_preview_ready(*event[1:])
         elif event[0] == "update":
             self._on_update_result(*event[1:])
 
