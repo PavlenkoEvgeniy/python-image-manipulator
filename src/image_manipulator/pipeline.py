@@ -41,15 +41,61 @@ class ProcessResult:
     error: Optional[str] = None
 
 
+def _normalize_high_depth(image: Image.Image) -> Image.Image:
+    """Scale 16-bit integer and float images down to 8 bits.
+
+    A plain ``convert("RGB")`` clips everything above 255 to white, which
+    destroys the midtones of 16-bit grayscale scans.
+    """
+    mode = image.mode
+    if mode == "F":
+        low, high = image.getextrema()
+        if low >= 0.0 and high <= 1.0:
+            scaled = image.point(lambda value: value * 255.0)
+        elif high > low:
+            scale = 255.0 / (high - low)
+            scaled = image.point(lambda value: (value - low) * scale)
+        else:
+            scaled = image.point(lambda value: 0.0)
+        return scaled.convert("L").convert("RGB")
+
+    if mode in ("I;16", "I;16B", "I;16L", "I;16N"):
+        return (
+            image.convert("I")
+            .point(lambda value: value * (255.0 / 65535.0))
+            .convert("L")
+            .convert("RGB")
+        )
+
+    low, high = image.getextrema()
+    if high <= low:
+        return image.convert("L").convert("RGB")
+    scale = 255.0 / (high - low)
+    return (
+        image.point(lambda value: (value - low) * scale)
+        .convert("L")
+        .convert("RGB")
+    )
+
+
 def _normalize_mode(image: Image.Image) -> Image.Image:
     """Convert exotic color modes to RGB or RGBA.
 
-    Palette, grayscale-with-alpha, CMYK and 16-bit images either cannot be
-    resized with Lanczos or cannot be drawn on with a hex color, so they are
-    normalized before processing.
+    Palette, grayscale-with-alpha, CMYK, high-bit-depth and float images
+    either cannot be resized with Lanczos or cannot be drawn on with a hex
+    color, so they are normalized before processing.
     """
     if image.mode in ("RGB", "RGBA"):
         return image
+    if image.mode in (
+        "I",
+        "F",
+        "I;16",
+        "I;16B",
+        "I;16L",
+        "I;16N",
+    ):
+        return _normalize_high_depth(image)
     has_alpha = image.mode in ("PA", "LA") or "transparency" in image.info
     if has_alpha:
         return image.convert("RGBA")

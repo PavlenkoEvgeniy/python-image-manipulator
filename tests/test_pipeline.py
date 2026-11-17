@@ -6,7 +6,12 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from image_manipulator.pipeline import ImageManipulator, load_image, save_image
+from image_manipulator.pipeline import (
+    ImageManipulator,
+    _normalize_mode,
+    load_image,
+    save_image,
+)
 from image_manipulator.resize import OutputFormat
 from image_manipulator.text_overlay import TextOverlay
 
@@ -278,6 +283,48 @@ class TestOrientation:
         with Image.open(result.output_path) as saved:
             # Display orientation is portrait: 200x400 scaled by 2.5
             assert saved.size == (500, 1000)
+
+
+class TestHighDepthNormalization:
+    """16-bit and float images must be scaled, not clipped."""
+
+    @pytest.mark.parametrize(
+        ("mode", "values"),
+        [
+            ("I;16", [0, 32768, 65535]),
+            ("I", [0, 32768, 65535]),
+            ("F", [0.0, 0.5, 1.0]),
+        ],
+    )
+    def test_midtones_survive(self, mode, values):
+        image = Image.new(mode, (3, 1))
+        image.putdata(values)
+
+        normalized = _normalize_mode(image)
+
+        assert normalized.mode == "RGB"
+        pixels = normalized.tobytes()
+        assert pixels[0:3] == bytes((0, 0, 0))
+        assert 100 <= pixels[3] <= 160
+        assert pixels[6:9] == bytes((255, 255, 255))
+
+    def test_16_bit_png_round_trip(self, tmp_path):
+        source = tmp_path / "scan.png"
+        image = Image.new("I;16", (3, 1))
+        image.putdata([0, 32768, 65535])
+        image.save(source)
+
+        result = ImageManipulator(
+            target_width=3,
+            target_height=1,
+            maintain_aspect=False,
+            output_format=OutputFormat.PNG,
+        ).process_path(source, tmp_path / "out")
+
+        assert result.success is True
+        with Image.open(result.output_path) as saved:
+            pixels = saved.convert("RGB").tobytes()
+        assert 100 <= pixels[3] <= 160
 
 
 class TestMultiframeOverwrite:
