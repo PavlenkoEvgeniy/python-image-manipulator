@@ -282,9 +282,10 @@ class TestTextOverlay:
         exact = tmp_path / "exact.ttf"; exact.write_bytes(b"x")
         regular = tmp_path / "regular.ttf"; regular.write_bytes(b"x")
         other = tmp_path / "other.ttf"; other.write_bytes(b"x")
-        stdout = f"{exact}:style=Bold\n{regular}:style=Regular\n{other}:style=Thin\nmissing.ttf:style=Bold\n"
+        monkeypatch.chdir(tmp_path)
+        stdout = "exact.ttf:style=Bold\nregular.ttf:style=Regular\nother.ttf:style=Thin\nmissing.ttf:style=Bold\n"
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: SimpleNamespace(stdout=stdout))
-        assert TextOverlay._fontconfig_candidates("F", "Bold") == [str(exact), str(regular), str(other)]
+        assert TextOverlay._fontconfig_candidates("F", "Bold") == ["exact.ttf", "regular.ttf", "other.ttf"]
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(OSError()))
         assert TextOverlay._fontconfig_candidates("F", "Bold") == []
 
