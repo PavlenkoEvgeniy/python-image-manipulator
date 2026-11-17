@@ -46,7 +46,7 @@ class TestDefaults:
         assert config.version == __version__
         assert 'dynamic = ["version"]' in pyproject
         assert 'version = {attr = "image_manipulator.__version__"}' in pyproject
-        assert '- **Version:** [latest release]' in readme
+        assert "- **Version:** [latest release]" in readme
 
 
 class TestDefaultOutputDirectory:

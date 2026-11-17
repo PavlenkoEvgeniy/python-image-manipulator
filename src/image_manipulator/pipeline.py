@@ -11,26 +11,12 @@ from typing import Any, cast
 from PIL import Image, ImageOps
 
 from .config import config
+from .formats import format_for_name, format_for_suffix
 from .i18n import tr
 from .resize import OutputFormat, resize_image
 from .text_overlay import TextOverlay
 
 logger = logging.getLogger(__name__)
-
-# Pillow output formats keyed by file suffix, used when overwriting originals.
-_FORMAT_BY_SUFFIX = {
-    ".jpg": "JPEG",
-    ".jpeg": "JPEG",
-    ".png": "PNG",
-    ".webp": "WEBP",
-    ".bmp": "BMP",
-    ".tif": "TIFF",
-    ".tiff": "TIFF",
-    ".gif": "GIF",
-}
-
-# Formats that can carry an ICC profile in Pillow.
-_ICC_FORMATS = {"JPEG", "PNG", "WEBP", "TIFF"}
 
 
 @dataclass
@@ -163,7 +149,8 @@ def _flatten_to_rgb(image: Image.Image) -> Image.Image:
 
 def _prepare_for_save(image: Image.Image, pil_format: str) -> Image.Image:
     """Convert the image mode to one the target format supports."""
-    if pil_format in ("JPEG", "BMP"):
+    image_format = format_for_name(pil_format)
+    if image_format is not None and not image_format.supports_alpha:
         return _flatten_to_rgb(image)
     if pil_format == "GIF" and image.mode != "P":
         return _to_gif_palette(image)
@@ -188,15 +175,13 @@ def save_image(
     """
     prepared = _prepare_for_save(image, pil_format)
 
+    image_format = format_for_name(pil_format)
     kwargs: dict[str, Any] = {}
-    if pil_format == "JPEG":
+    if image_format is not None and image_format.is_lossy:
         kwargs["quality"] = jpeg_quality
+    if pil_format in ("JPEG", "PNG"):
         kwargs["optimize"] = True
-    elif pil_format == "PNG":
-        kwargs["optimize"] = True
-    elif pil_format == "WEBP":
-        kwargs["quality"] = jpeg_quality
-    if icc_profile and pil_format in _ICC_FORMATS:
+    if icc_profile and image_format is not None and image_format.supports_icc:
         kwargs["icc_profile"] = icc_profile
 
     path = Path(path)
@@ -308,9 +293,9 @@ class ImageManipulator:
             Tuple of (output path, Pillow format name).
         """
         if overwrite:
-            pil_format = _FORMAT_BY_SUFFIX.get(input_path.suffix.lower())
-            if pil_format is not None:
-                return input_path, pil_format
+            image_format = format_for_suffix(input_path.suffix)
+            if image_format is not None:
+                return input_path, image_format.pillow_name
             logger.warning(
                 f"Cannot overwrite {input_path.name}: unsupported output suffix. "
                 "Saving to the output folder instead."

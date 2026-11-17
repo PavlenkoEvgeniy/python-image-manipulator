@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from . import __version__ as _package_version
+from .formats import OUTPUT_FORMATS, SUPPORTED_INPUT_SUFFIXES
 
 
 @dataclass
@@ -20,16 +21,7 @@ class AppConfig:
     window_height: int = 800
 
     # Supported image and font formats
-    valid_extensions: tuple[str, ...] = (
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".bmp",
-        ".gif",
-        ".tiff",
-        ".tif",
-        ".webp",
-    )
+    valid_extensions: tuple[str, ...] = SUPPORTED_INPUT_SUFFIXES
     font_extensions: tuple[str, ...] = (".ttf", ".otf")
 
     # Resize defaults
@@ -40,7 +32,7 @@ class AppConfig:
     default_rotate_portrait_to_landscape: bool = False
     default_output_format: str = "JPEG"
     default_jpeg_quality: int = 95
-    output_formats: tuple[str, ...] = ("JPEG", "PNG", "WEBP", "BMP")
+    output_formats: tuple[str, ...] = OUTPUT_FORMATS
     min_dimension: int = 1
     max_dimension: int = 20000
     min_jpeg_quality: int = 1

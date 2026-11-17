@@ -5,6 +5,7 @@ from enum import Enum
 from PIL import Image
 
 from .config import config
+from .formats import FORMAT_BY_NAME
 
 
 class OutputFormat(Enum):
@@ -18,7 +19,12 @@ class OutputFormat(Enum):
     @property
     def extension(self) -> str:
         """File extension (without the dot) for this format."""
-        return "jpg" if self.value == "JPEG" else self.value.lower()
+        image_format = FORMAT_BY_NAME.get(self.value)
+        return (
+            image_format.output_extension
+            if image_format is not None and image_format.output_extension
+            else self.value.lower()
+        )
 
     @classmethod
     def from_name(cls, name: str) -> "OutputFormat":
