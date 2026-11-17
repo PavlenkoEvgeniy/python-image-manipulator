@@ -258,7 +258,7 @@ class TestPipelineRemaining:
 class TestPositioningRemaining:
     def test_aligned_window_does_not_move_twice(self):
         class Window:
-            def update(self):
+            def update_idletasks(self):
                 pass
 
             def winfo_ismapped(self):
@@ -498,6 +498,7 @@ class TestTextOverlayRemaining:
         )
         assert overlay._load_system_font(20) is sentinel
 
+        text_overlay._FONT_PATH_CACHE.clear()
         monkeypatch.setattr(
             TextOverlay,
             "_try_load_font",
@@ -593,6 +594,80 @@ class TestTextOverlayRemaining:
         )
 
         assert TextOverlay._fontconfig_candidates("Missing", "Regular") == []
+
+    def test_font_path_cache_hits_and_unresolved_families(self, monkeypatch):
+        text_overlay._FONT_PATH_CACHE.clear()
+        fake_font = SimpleNamespace(path="/tmp/cached.ttf")
+        monkeypatch.setattr(
+            TextOverlay,
+            "_try_load_font",
+            staticmethod(lambda name, size, **kwargs: fake_font),
+        )
+        overlay = TextOverlay(font_family="Cached Family", font_size=20)
+
+        assert overlay._load_system_font(20) is fake_font
+        assert overlay._load_system_font(20) is fake_font
+        assert (
+            text_overlay._FONT_PATH_CACHE[("Cached Family", "Normal")]
+            == "/tmp/cached.ttf"
+        )
+
+        text_overlay._FONT_PATH_CACHE.clear()
+        monkeypatch.setattr(
+            TextOverlay,
+            "_try_load_font",
+            staticmethod(lambda name, size, **kwargs: None),
+        )
+        monkeypatch.setattr(
+            TextOverlay,
+            "_fontconfig_candidates",
+            staticmethod(lambda family, style: []),
+        )
+        missing = TextOverlay(font_family="Missing Cached Family", font_size=20)
+
+        assert missing._load_system_font(20) is None
+        assert missing._load_system_font(20) is None
+        assert (
+            text_overlay._FONT_PATH_CACHE[("Missing Cached Family", "Normal")] is None
+        )
+
+    def test_stale_cached_path_is_dropped(self, monkeypatch):
+        text_overlay._FONT_PATH_CACHE.clear()
+        text_overlay._FONT_PATH_CACHE[("Stale Family", "Normal")] = "/tmp/stale.ttf"
+        fallback = SimpleNamespace(path="/tmp/fresh.ttf")
+        monkeypatch.setattr(
+            TextOverlay,
+            "_try_load_font",
+            staticmethod(
+                lambda name, size, **kwargs: (
+                    None if name == "/tmp/stale.ttf" else fallback
+                )
+            ),
+        )
+        overlay = TextOverlay(font_family="Stale Family", font_size=20)
+
+        assert overlay._load_system_font(20) is fallback
+        assert (
+            text_overlay._FONT_PATH_CACHE[("Stale Family", "Normal")]
+            == "/tmp/fresh.ttf"
+        )
+
+    def test_already_warned_family_skips_the_warning(self, monkeypatch):
+        text_overlay._FONT_PATH_CACHE.clear()
+        text_overlay._WARNED_UNRESOLVED_FAMILIES.add("Warned Family")
+        monkeypatch.setattr(
+            TextOverlay,
+            "_try_load_font",
+            staticmethod(lambda name, size, **kwargs: None),
+        )
+        monkeypatch.setattr(
+            TextOverlay,
+            "_fontconfig_candidates",
+            staticmethod(lambda family, style: []),
+        )
+        overlay = TextOverlay(font_family="Warned Family", font_size=20)
+
+        assert overlay._load_system_font(20) is None
 
 
 class TestDialogsRemaining:

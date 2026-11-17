@@ -70,7 +70,10 @@ def center_on_screen(
         y = max(0, y)
 
     window.geometry(f"{width}x{height}+{x}+{y}")
-    _align_client(window, x, y, width, height)
+    # Do not pump the event loop here: this runs while the main window is
+    # still being constructed, and a full idle pass can take noticeable time
+    # on slow displays. The geometry above is already what the WM receives;
+    # client-frame correction is only needed for dialogs.
 
 
 def center_over_parent(
@@ -96,12 +99,18 @@ def center_over_parent(
 
 
 def _align_client(window: Window, x: int, y: int, width: int, height: int) -> None:
-    """Correct for window managers that position the frame, not the client."""
-    window.update()
+    """Correct for window managers that position the frame, not the client.
+
+    Only idle work is pumped here. A full ``update()`` ran the entire event
+    loop while the window was still being built, which made startup and
+    dialog placement noticeably slow and could re-enter application
+    callbacks.
+    """
+    window.update_idletasks()
     if not window.winfo_ismapped():
         return
     error_x = x - window.winfo_rootx()
     error_y = y - window.winfo_rooty()
     if error_x or error_y:
         window.geometry(f"{width}x{height}+{x + error_x}+{y + error_y}")
-        window.update()
+        window.update_idletasks()

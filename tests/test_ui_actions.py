@@ -386,6 +386,7 @@ class TestTextAndFontHandlers:
             raise tk.TclError("no fonts")
 
         monkeypatch.setattr(ui.tkfont, "families", broken)
+        application._font_families_cache = None
         with caplog.at_level(logging.WARNING, logger=ui.logger.name):
             assert application._system_font_families() == []
         assert "Failed to enumerate system fonts" in caplog.text

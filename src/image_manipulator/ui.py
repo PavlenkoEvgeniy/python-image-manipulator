@@ -99,6 +99,7 @@ class ManipulatorApp:
         self._update_check_running = False
         self._events: queue.Queue[WorkerEvent] = queue.Queue()
         self._window_icon: ImageTk.PhotoImage | None = None
+        self._font_families_cache: list[str] | None = None
 
         self._setup_window()
         self._set_window_icon()
@@ -437,10 +438,12 @@ class ManipulatorApp:
         )
 
         ttk.Label(tab, text=tr("text.font")).grid(row=4, column=0, sticky="w", pady=5)
+        # Do not enumerate every installed font while the window is being
+        # built. The list is filled lazily when the dropdown is opened.
         self.font_family_combo = ttk.Combobox(
             tab,
             textvariable=self.font_family_var,
-            values=self._system_font_families(),
+            values=[],
             width=22,
             postcommand=self._refresh_font_families,
         )
@@ -1016,12 +1019,16 @@ class ManipulatorApp:
         self._on_setting_changed()
 
     def _system_font_families(self) -> list:
-        """List installed font families, sorted alphabetically."""
+        """List installed font families, sorted alphabetically and cached."""
+        if self._font_families_cache is not None:
+            return list(self._font_families_cache)
         try:
-            return sorted(tkfont.families(root=self.root))
+            families = sorted(tkfont.families(root=self.root))
         except tk.TclError as e:
             logger.warning(f"Failed to enumerate system fonts: {e}")
-            return []
+            families = []
+        self._font_families_cache = families
+        return list(families)
 
     def _refresh_font_families(self) -> None:
         """Refresh the family dropdown each time it opens."""

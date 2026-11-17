@@ -42,6 +42,7 @@ _ALLOWED_FONT_SUFFIXES = {
 _FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
 _PLATFORM_FONT_FILES: list[tuple[str, Path]] | None = None
 _FONT_CANDIDATE_CACHE: dict[tuple[str, str], list[str]] = {}
+_FONT_PATH_CACHE: dict[tuple[str, str], str | None] = {}
 _WARNED_UNRESOLVED_FAMILIES: set[str] = set()
 
 
@@ -270,11 +271,22 @@ class TextOverlay:
 
         style = (self.font_style or "").strip()
         suffix = self.STYLE_SUFFIXES.get(style, "")
+        cache_key = (family, style)
+
+        if cache_key in _FONT_PATH_CACHE:
+            cached_path = _FONT_PATH_CACHE[cache_key]
+            if cached_path is None:
+                return None
+            font = self._try_load_font(cached_path, size)
+            if font is not None:
+                return font
+            _FONT_PATH_CACHE.pop(cache_key, None)
 
         for name in ([family + suffix] if suffix else []) + [family]:
             font = self._try_load_font(name, size)
             if font is not None:
                 logger.debug(f"Loaded system font: {name}")
+                _FONT_PATH_CACHE[cache_key] = getattr(font, "path", None)
                 return font
 
         fc_style = self.FC_STYLE_NAMES.get(style, "Regular")
@@ -282,8 +294,10 @@ class TextOverlay:
             font = self._try_load_font(path, size)
             if font is not None:
                 logger.debug(f"Loaded system font: {path}")
+                _FONT_PATH_CACHE[cache_key] = str(path)
                 return font
 
+        _FONT_PATH_CACHE[cache_key] = None
         if family not in _WARNED_UNRESOLVED_FAMILIES:
             logger.warning(
                 "Could not resolve system font family %r; using fallback",
