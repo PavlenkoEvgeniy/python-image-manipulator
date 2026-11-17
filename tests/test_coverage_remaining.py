@@ -1,5 +1,6 @@
 """Tests for the remaining platform, fallback and defensive branches."""
 
+import os
 import sys
 import types
 from pathlib import Path
@@ -74,16 +75,16 @@ class TestIconFrozenPaths:
         monkeypatch.setattr(sys, "frozen", True, raising=False)
         monkeypatch.setattr(sys, "_MEIPASS", "/bundle", raising=False)
 
-        expected = Path("/bundle") / "image_manipulator" / "icon.png"
-        assert icon.get_icon_path() == str(expected)
+        expected = os.path.join("/bundle", "image_manipulator", "icon.png")
+        assert icon.get_icon_path() == expected
 
     def test_frozen_path_falls_back_to_executable_dir(self, monkeypatch):
         monkeypatch.setattr(sys, "frozen", True, raising=False)
         monkeypatch.delattr(sys, "_MEIPASS", raising=False)
         monkeypatch.setattr(sys, "executable", "/opt/app/image-manipulator")
 
-        expected = Path("/opt/app") / "image_manipulator" / "icon.png"
-        assert icon.get_icon_path() == str(expected)
+        expected = os.path.join("/opt/app", "image_manipulator", "icon.png")
+        assert icon.get_icon_path() == expected
 
 
 class TestDebouncer:
