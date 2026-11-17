@@ -111,5 +111,6 @@
   "about.close": "Tutup",
   "pipeline.not_found": "Berkas masukan tidak ditemukan: {path}",
   "pipeline.unsupported_format": "Format gambar tidak didukung: {suffix}",
+  "pipeline.multiframe_overwrite": "Tidak dapat menimpa {name}: gambar animasi atau multi-halaman tidak didukung. Nonaktifkan timpa untuk menyimpan salinan.",
   "pipeline.failed": "Gagal memproses {name}: {error}"
 }

@@ -280,6 +280,86 @@ class TestOrientation:
             assert saved.size == (500, 1000)
 
 
+class TestMultiframeOverwrite:
+    """Replacing an animated or multi-page file would destroy structure."""
+
+    @staticmethod
+    def _animated_frames():
+        return [Image.new("RGB", (40, 40), color) for color in ("red", "green", "blue")]
+
+    def test_animated_gif_is_not_overwritten(self, tmp_path):
+        source = tmp_path / "animated.gif"
+        frames = self._animated_frames()
+        frames[0].save(
+            source, save_all=True, append_images=frames[1:], duration=100, loop=0
+        )
+        original = source.read_bytes()
+
+        result = ImageManipulator(
+            target_width=20, target_height=20
+        ).process_path(source, tmp_path, overwrite=True)
+
+        assert result.success is False
+        assert "Cannot overwrite" in result.error
+        assert source.read_bytes() == original
+        with Image.open(source) as saved:
+            assert saved.n_frames == 3
+
+    def test_multipage_tiff_is_not_overwritten(self, tmp_path):
+        source = tmp_path / "pages.tiff"
+        frames = self._animated_frames()
+        frames[0].save(
+            source, save_all=True, append_images=frames[1:], format="TIFF"
+        )
+        original = source.read_bytes()
+
+        result = ImageManipulator(
+            target_width=20, target_height=20
+        ).process_path(source, tmp_path, overwrite=True)
+
+        assert result.success is False
+        assert "Cannot overwrite" in result.error
+        assert source.read_bytes() == original
+        with Image.open(source) as saved:
+            assert saved.n_frames == 3
+
+    def test_animated_webp_is_not_overwritten(self, tmp_path):
+        source = tmp_path / "animated.webp"
+        frames = self._animated_frames()
+        try:
+            frames[0].save(
+                source, save_all=True, append_images=frames[1:], duration=100
+            )
+        except (OSError, ValueError):
+            pytest.skip("this Pillow build cannot write animated WEBP")
+        with Image.open(source) as saved:
+            if saved.n_frames == 1:
+                pytest.skip("this Pillow build did not preserve WEBP animation")
+
+        result = ImageManipulator(
+            target_width=20, target_height=20
+        ).process_path(source, tmp_path, overwrite=True)
+
+        assert result.success is False
+        assert "Cannot overwrite" in result.error
+
+    def test_transparent_gif_keeps_transparency(self, tmp_path):
+        source = tmp_path / "transparent.gif"
+        image = Image.new("RGBA", (40, 40), (0, 0, 0, 0))
+        image.putpixel((20, 20), (255, 0, 0, 255))
+        image.save(source, format="GIF")
+
+        result = ImageManipulator(
+            target_width=20, target_height=20
+        ).process_path(source, tmp_path, overwrite=True)
+
+        assert result.success is True
+        with Image.open(source) as saved:
+            assert saved.info.get("transparency") is not None
+            rgba = saved.convert("RGBA")
+            assert rgba.getpixel((0, 0))[3] == 0
+
+
 class TestAtomicSave:
     """A failed write must never damage the destination file."""
 

@@ -111,5 +111,6 @@
   "about.close": "Kapat",
   "pipeline.not_found": "Giriş dosyası bulunamadı: {path}",
   "pipeline.unsupported_format": "Desteklenmeyen resim biçimi: {suffix}",
+  "pipeline.multiframe_overwrite": "{name} üzerine yazılamıyor: animasyonlu veya çok sayfalı görüntüler desteklenmiyor. Bir kopya kaydetmek için üzerine yazmayı kapatın.",
   "pipeline.failed": "İşlenemedi {name}: {error}"
 }

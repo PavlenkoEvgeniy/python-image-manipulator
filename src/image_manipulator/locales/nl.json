@@ -111,5 +111,6 @@
   "about.close": "Sluiten",
   "pipeline.not_found": "Invoerbestand niet gevonden: {path}",
   "pipeline.unsupported_format": "Niet-ondersteund afbeeldingsformaat: {suffix}",
+  "pipeline.multiframe_overwrite": "Kan {name} niet overschrijven: geanimeerde of meerpagina-afbeeldingen worden niet ondersteund. Schakel overschrijven uit om een kopie op te slaan.",
   "pipeline.failed": "Kan {name} niet verwerken: {error}"
 }

@@ -111,5 +111,6 @@
   "about.close": "Fechar",
   "pipeline.not_found": "Arquivo de entrada não encontrado: {path}",
   "pipeline.unsupported_format": "Formato de imagem não suportado: {suffix}",
+  "pipeline.multiframe_overwrite": "Não é possível substituir {name}: imagens animadas ou com várias páginas não são suportadas. Desative a substituição para salvar uma cópia.",
   "pipeline.failed": "Falha ao processar {name}: {error}"
 }

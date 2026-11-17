@@ -111,5 +111,6 @@
   "about.close": "닫기",
   "pipeline.not_found": "입력 파일을 찾을 수 없습니다: {path}",
   "pipeline.unsupported_format": "지원되지 않는 이미지 형식: {suffix}",
+  "pipeline.multiframe_overwrite": "{name}을(를) 덮어쓸 수 없습니다. 애니메이션 또는 여러 페이지 이미지는 지원되지 않습니다. 덮어쓰기를 끄고 복사본을 저장하세요.",
   "pipeline.failed": "{name} 처리 실패: {error}"
 }

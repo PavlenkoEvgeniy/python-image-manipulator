@@ -111,5 +111,6 @@
   "about.close": "閉じる",
   "pipeline.not_found": "入力ファイルが見つかりません: {path}",
   "pipeline.unsupported_format": "サポートされていない画像形式です: {suffix}",
+  "pipeline.multiframe_overwrite": "{name} を上書きできません。アニメーション画像や複数ページ画像には対応していません。上書きを無効にしてコピーを保存してください。",
   "pipeline.failed": "{name} の処理に失敗しました: {error}"
 }

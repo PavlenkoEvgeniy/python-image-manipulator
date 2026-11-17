@@ -111,5 +111,6 @@
   "about.close": "Zamknij",
   "pipeline.not_found": "Nie znaleziono pliku wejściowego: {path}",
   "pipeline.unsupported_format": "Nieobsługiwany format obrazu: {suffix}",
+  "pipeline.multiframe_overwrite": "Nie można nadpisać {name}: animowane i wielostronicowe obrazy nie są obsługiwane. Wyłącz nadpisywanie, aby zapisać kopię.",
   "pipeline.failed": "Nie udało się przetworzyć {name}: {error}"
 }

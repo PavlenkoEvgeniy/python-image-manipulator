@@ -111,5 +111,6 @@
   "about.close": "Закрыть",
   "pipeline.not_found": "Файл не найден: {path}",
   "pipeline.unsupported_format": "Неподдерживаемый формат изображения: {suffix}",
+  "pipeline.multiframe_overwrite": "Нельзя перезаписать {name}: анимированные и многостраничные изображения не поддерживаются. Отключите перезапись, чтобы сохранить копию.",
   "pipeline.failed": "Не удалось обработать {name}: {error}"
 }

@@ -111,5 +111,6 @@
   "about.close": "Fermer",
   "pipeline.not_found": "Fichier d'entrée introuvable : {path}",
   "pipeline.unsupported_format": "Format d'image non pris en charge : {suffix}",
+  "pipeline.multiframe_overwrite": "Impossible d'écraser {name} : les images animées ou multipages ne sont pas prises en charge. Désactivez l'écrasement pour enregistrer une copie.",
   "pipeline.failed": "Impossible de traiter {name} : {error}"
 }

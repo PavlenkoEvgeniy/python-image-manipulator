@@ -111,5 +111,6 @@
   "about.close": "关闭",
   "pipeline.not_found": "找不到输入文件：{path}",
   "pipeline.unsupported_format": "不支持的图片格式：{suffix}",
+  "pipeline.multiframe_overwrite": "无法覆盖 {name}：不支持动画或多页图像。请关闭覆盖以保存副本。",
   "pipeline.failed": "处理 {name} 失败：{error}"
 }

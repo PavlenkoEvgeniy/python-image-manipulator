@@ -84,6 +84,30 @@ def load_image(path) -> Tuple[Image.Image, Optional[bytes]]:
     return image, icc_profile
 
 
+def _has_multiple_frames(path: Path) -> bool:
+    """Whether a file contains animation or more than one page."""
+    with Image.open(path) as image:
+        return getattr(image, "n_frames", 1) > 1
+
+
+def _to_gif_palette(image: Image.Image) -> Image.Image:
+    """Convert to a P image while preserving a single transparent index."""
+    rgba = image.convert("RGBA")
+    alpha = rgba.getchannel("A")
+    palette = rgba.convert("RGB").quantize(
+        colors=255, method=Image.Quantize.MEDIANCUT
+    )
+    colors = palette.getpalette() or []
+    if len(colors) < 768:
+        colors.extend([0] * (768 - len(colors)))
+        palette.putpalette(colors)
+    if alpha.getextrema()[0] < 255:
+        transparent = alpha.point(lambda value: 255 if value == 0 else 0)
+        palette.paste(255, mask=transparent)
+        palette.info["transparency"] = 255
+    return palette
+
+
 def _flatten_to_rgb(image: Image.Image) -> Image.Image:
     """Flatten transparency onto a white background for JPEG/BMP output."""
     if image.mode == "RGB":
@@ -101,7 +125,7 @@ def _prepare_for_save(image: Image.Image, pil_format: str) -> Image.Image:
     if pil_format in ("JPEG", "BMP"):
         return _flatten_to_rgb(image)
     if pil_format == "GIF" and image.mode != "P":
-        return image.convert("RGB").convert("P", palette=Image.Palette.ADAPTIVE)
+        return _to_gif_palette(image)
     return image
 
 
@@ -301,8 +325,12 @@ class ImageManipulator:
                     suffix=path.suffix or path.name,
                 ),
             )
-
         try:
+            if overwrite and _has_multiple_frames(path):
+                return ProcessResult(
+                    False,
+                    error=tr("pipeline.multiframe_overwrite", name=path.name),
+                )
             image, icc_profile = load_image(path)
             rendered = self.render(image)
             output_path, pil_format = self.resolve_output_path(

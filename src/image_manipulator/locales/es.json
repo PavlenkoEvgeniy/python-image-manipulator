@@ -111,5 +111,6 @@
   "about.close": "Cerrar",
   "pipeline.not_found": "Archivo de entrada no encontrado: {path}",
   "pipeline.unsupported_format": "Formato de imagen no compatible: {suffix}",
+  "pipeline.multiframe_overwrite": "No se puede sobrescribir {name}: no se admiten imágenes animadas ni de varias páginas. Desactive la sobrescritura para guardar una copia.",
   "pipeline.failed": "No se pudo procesar {name}: {error}"
 }

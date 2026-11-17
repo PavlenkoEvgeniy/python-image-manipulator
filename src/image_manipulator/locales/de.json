@@ -111,5 +111,6 @@
   "about.close": "Schließen",
   "pipeline.not_found": "Eingabedatei nicht gefunden: {path}",
   "pipeline.unsupported_format": "Nicht unterstütztes Bildformat: {suffix}",
+  "pipeline.multiframe_overwrite": "{name} kann nicht überschrieben werden: Animierte oder mehrseitige Bilder werden nicht unterstützt. Deaktivieren Sie das Überschreiben, um eine Kopie zu speichern.",
   "pipeline.failed": "{name} konnte nicht verarbeitet werden: {error}"
 }

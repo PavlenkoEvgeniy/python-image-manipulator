@@ -111,5 +111,6 @@
   "about.close": "Close",
   "pipeline.not_found": "Input file not found: {path}",
   "pipeline.unsupported_format": "Unsupported image format: {suffix}",
+  "pipeline.multiframe_overwrite": "Cannot overwrite {name}: animated or multi-page images are not supported. Turn off overwrite to save a copy.",
   "pipeline.failed": "Failed to process {name}: {error}"
 }

@@ -111,5 +111,6 @@
   "about.close": "Isara",
   "pipeline.not_found": "Hindi mahanap ang input file: {path}",
   "pipeline.unsupported_format": "Hindi suportadong format ng larawan: {suffix}",
+  "pipeline.multiframe_overwrite": "Hindi ma-overwrite ang {name}: hindi sinusuportahan ang animated o multi-page na mga larawan. I-off ang overwrite para mag-save ng kopya.",
   "pipeline.failed": "Nabigong iproseso ang {name}: {error}"
 }
