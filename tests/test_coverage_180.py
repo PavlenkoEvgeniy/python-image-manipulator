@@ -374,6 +374,11 @@ class TestMainModule:
 
 
 class TestUpdateChecker:
+    def test_os_release_non_id_lines(self, tmp_path):
+        path = tmp_path / "os-release"
+        path.write_text("NAME=Test\nID=ubuntu\n", encoding="utf-8")
+        assert update_checker.linux_package_kind(os_release=str(path), which=lambda name: None) == "deb"
+
     def test_os_release_missing_and_assets(self, monkeypatch):
         assert update_checker.linux_package_kind("/definitely/missing", which=lambda n: None) == "deb"
         assert update_checker._https_assets(None, "linux") == []
