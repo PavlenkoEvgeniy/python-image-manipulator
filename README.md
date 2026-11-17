@@ -122,7 +122,14 @@ source .venv/bin/activate  # Linux/macOS
 pip install -e ".[dev,dnd,multimonitor]"
 ```
 
-Minimum dependency: `Pillow>=10`.
+Or, with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv sync --locked --extra dev --extra dnd --extra multimonitor
+uv run python main.py
+```
+
+Python 3.11 or newer is required. Minimum dependency: `Pillow>=10`.
 Optional: `tkinterdnd2` (drag & drop) and `screeninfo` (centering the window on
 the monitor under the pointer).
 

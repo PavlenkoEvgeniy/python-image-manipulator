@@ -9,6 +9,15 @@ pip install -e ".[dev,dnd,multimonitor]"
 pre-commit install
 ```
 
+Alternatively, use the locked environment:
+
+```bash
+uv sync --locked --extra dev --extra dnd --extra multimonitor
+pre-commit install
+```
+
+Python 3.11 or newer is required.
+
 Run the complete local quality gate before pushing:
 
 ```bash

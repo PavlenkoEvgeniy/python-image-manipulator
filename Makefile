@@ -31,7 +31,7 @@ quality: lint
 	python -m pytest -q
 
 install-dev:
-	pip install -e ".[dev]"
+	pip install -e ".[dev,dnd,multimonitor]"
 
 run:
 	PYTHONPATH=src python main.py
