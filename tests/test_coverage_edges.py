@@ -338,14 +338,24 @@ class TestPipelineEdges:
 
 class TestUpdateCheckerEdges:
     class _Response:
-        def __init__(self, payload):
+        def __init__(
+            self,
+            payload,
+            url="https://api.github.com/",
+            content_type="application/json",
+        ):
             self.payload = payload
+            self.url = url
+            self.headers = SimpleNamespace(get_content_type=lambda: content_type)
 
         def __enter__(self):
             return self
 
         def __exit__(self, *args):
             return False
+
+        def geturl(self):
+            return self.url
 
         def read(self, size):
             return self.payload
@@ -373,6 +383,58 @@ class TestUpdateCheckerEdges:
             lambda request, timeout=None: self._Response(b"[]"),
         )
 
+        with pytest.raises(ValueError):
+            update_checker.fetch_latest_release()
+
+    def test_fetch_rejects_a_non_https_redirect(self, monkeypatch):
+        monkeypatch.setattr(
+            update_checker.urllib.request,
+            "urlopen",
+            lambda request, timeout=None: self._Response(
+                b"{}", url="http://insecure.example/"
+            ),
+        )
+
+        with pytest.raises(ValueError):
+            update_checker.fetch_latest_release()
+
+    def test_fetch_rejects_a_non_json_content_type(self, monkeypatch):
+        monkeypatch.setattr(
+            update_checker.urllib.request,
+            "urlopen",
+            lambda request, timeout=None: self._Response(
+                b"{}", content_type="text/html"
+            ),
+        )
+
+        with pytest.raises(ValueError):
+            update_checker.fetch_latest_release()
+
+    def test_fetch_rejects_an_oversized_response(self, monkeypatch):
+        oversized = b"x" * (update_checker.MAX_RESPONSE_BYTES + 1)
+        monkeypatch.setattr(
+            update_checker.urllib.request,
+            "urlopen",
+            lambda request, timeout=None: self._Response(oversized),
+        )
+
+        with pytest.raises(ValueError):
+            update_checker.fetch_latest_release()
+
+    def test_fetch_rejects_non_utf8_and_bad_json(self, monkeypatch):
+        monkeypatch.setattr(
+            update_checker.urllib.request,
+            "urlopen",
+            lambda request, timeout=None: self._Response(b"\xff"),
+        )
+        with pytest.raises(ValueError):
+            update_checker.fetch_latest_release()
+
+        monkeypatch.setattr(
+            update_checker.urllib.request,
+            "urlopen",
+            lambda request, timeout=None: self._Response(b"{not json"),
+        )
         with pytest.raises(ValueError):
             update_checker.fetch_latest_release()
 

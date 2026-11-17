@@ -127,6 +127,29 @@ def _https_assets(assets: Any, key: str) -> list:
     return matches
 
 
+def _pick_linux_asset(matches: list[tuple[str, str]], kind: str) -> str | None:
+    """Pick a Linux package, preferring the running distribution's type."""
+    for suffix in ("." + kind, ".deb", ".rpm", ".appimage"):
+        for name, url in matches:
+            if name.endswith(suffix):
+                return url
+    return None
+
+
+def _pick_windows_asset(matches: list[tuple[str, str]]) -> str | None:
+    for name, url in matches:
+        if "setup" in name or name.endswith(".msi"):
+            return url
+    return None
+
+
+def _pick_macos_asset(matches: list[tuple[str, str]]) -> str | None:
+    for name, url in matches:
+        if name.endswith((".dmg", ".pkg")):
+            return url
+    return None
+
+
 def pick_download_url(
     assets: Any,
     platform: str | None = None,
@@ -145,21 +168,14 @@ def pick_download_url(
         return release_url
 
     if key == "linux":
-        kind = package_kind or linux_package_kind()
-        for suffix in ("." + kind, ".deb", ".rpm", ".appimage"):
-            for name, url in matches:
-                if name.endswith(suffix):
-                    return url
+        selected = _pick_linux_asset(matches, package_kind or linux_package_kind())
     elif key == "windows":
-        for name, url in matches:
-            if "setup" in name or name.endswith(".msi"):
-                return url
+        selected = _pick_windows_asset(matches)
     elif key == "macos":
-        for name, url in matches:
-            if name.endswith((".dmg", ".pkg")):
-                return url
-
-    return matches[0][1]
+        selected = _pick_macos_asset(matches)
+    else:
+        selected = None
+    return selected or matches[0][1]
 
 
 def parse_latest_release(
@@ -215,9 +231,25 @@ def fetch_latest_release(timeout: float = REQUEST_TIMEOUT_SECONDS) -> dict[str, 
     with urllib.request.urlopen(  # noqa: S310 - constant https URL
         request, timeout=timeout
     ) as response:
-        body = response.read(MAX_RESPONSE_BYTES)
+        if not response.geturl().startswith("https://"):
+            raise ValueError("the release response is not HTTPS")
+        headers = getattr(response, "headers", None)
+        if headers is not None:
+            content_type = headers.get_content_type()
+            if content_type not in ("application/json", "text/json"):
+                raise ValueError("the release response is not JSON")
+        body = response.read(MAX_RESPONSE_BYTES + 1)
 
-    payload = json.loads(body.decode("utf-8"))
+    if len(body) > MAX_RESPONSE_BYTES:
+        raise ValueError("the release response is too large")
+    try:
+        text = body.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError("the release response is not UTF-8") from exc
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError("the release response is not valid JSON") from exc
     if not isinstance(payload, dict):
         raise ValueError("the release payload is not an object")
     return payload
