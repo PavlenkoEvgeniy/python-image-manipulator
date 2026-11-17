@@ -5,6 +5,7 @@ name preferred font families. When one is installed it is applied to the Tk
 named fonts and used for the dialogs' explicit fonts.
 """
 
+import tkinter as tk
 import tkinter.font as tkfont
 from typing import Iterable, Optional, Tuple, Union
 
