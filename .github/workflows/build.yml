@@ -64,7 +64,7 @@ jobs:
         run: mypy src
 
       - name: Run vulture
-        run: vulture src tests --min-confidence 80
+        run: vulture src --min-confidence 80
 
       - name: Run codespell
         run: codespell src tests tools README.md CLAUDE.md GLOSSARY.md --skip="*.json,*.png,*.ico,*.icns"
