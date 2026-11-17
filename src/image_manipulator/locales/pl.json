@@ -68,7 +68,6 @@
   "status.settings_reset": "Przywrócono ustawienia domyślne",
   "status.processing": "Przetwarzanie…",
   "status.processing_item": "Przetwarzanie {index}/{total}: {name}",
-  "status.batch_failed": "Przetwarzanie wsadowe zostało przerwane: {error}",
   "status.done": "Gotowo: przetworzono {success} z {total}",
   "status.partial": "Przetworzono {success} z {total}; niepowodzeń: {failed}",
   "dialog.ok": "OK",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Najpierw dodaj pliki graficzne.",
   "dialog.cannot_load.title": "Nie można wczytać obrazu",
   "dialog.cannot_load.message": "Nie udało się wczytać {name}:\n{error}",
-  "dialog.close_running.title": "Przetwarzanie w toku",
-  "dialog.close_running.message": "Partia jest jeszcze przetwarzana. Zamknąć okno mimo to? Bieżący plik może być niekompletny, a pozostałe zostaną pominięte.",
   "dialog.reset.title": "Przywróć ustawienia",
   "dialog.reset.message": "Przywrócić wszystkie ustawienia do wartości domyślnych?\n\nZapisany plik ustawień zostanie usunięty.",
   "dialog.overwrite.title": "Nadpisz oryginały",
@@ -114,6 +111,5 @@
   "about.close": "Zamknij",
   "pipeline.not_found": "Nie znaleziono pliku wejściowego: {path}",
   "pipeline.unsupported_format": "Nieobsługiwany format obrazu: {suffix}",
-  "pipeline.multiframe_overwrite": "Nie można nadpisać {name}: animowane i wielostronicowe obrazy nie są obsługiwane. Wyłącz nadpisywanie, aby zapisać kopię.",
   "pipeline.failed": "Nie udało się przetworzyć {name}: {error}"
 }

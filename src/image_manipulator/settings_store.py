@@ -6,19 +6,18 @@ corrupt file falls back silently to defaults, and each invalid field falls
 back to its own default while the remaining fields load as-is.
 """
 
-import contextlib
 import json
-import logging
 import os
 import re
 import sys
 import tempfile
-from typing import Any
+from typing import Any, Optional
 
 from .config import config
 from .i18n import detect_system_language, validate_language
+from .logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 SETTINGS_VERSION = 1
 SETTINGS_DIR_NAME = "image-manipulator"
@@ -139,19 +138,18 @@ def validate_settings(raw: dict) -> dict:
         else config.default_color
     )
 
-    settings["font_family"] = _string(raw, "font_family", config.default_font_family)
-
-    font_path = raw.get("font_path")
-    settings["font_path"] = (
-        font_path if font_path is None or isinstance(font_path, str) else None
+    settings["font_family"] = _string(
+        raw, "font_family", config.default_font_family
     )
 
+    font_path = raw.get("font_path")
+    settings["font_path"] = font_path if font_path is None or isinstance(
+        font_path, str
+    ) else None
+
     settings["font_size"] = _clamped_int(
-        raw,
-        "font_size",
-        config.default_font_size,
-        config.min_font_size,
-        config.max_font_size,
+        raw, "font_size", config.default_font_size,
+        config.min_font_size, config.max_font_size,
     )
 
     font_style = raw.get("font_style")
@@ -188,7 +186,7 @@ def validate_settings(raw: dict) -> dict:
     return settings
 
 
-def save_settings(settings: dict, path: str | None = None) -> bool:
+def save_settings(settings: dict, path: Optional[str] = None) -> bool:
     """Save settings atomically to the Settings file.
 
     Args:
@@ -199,18 +197,21 @@ def save_settings(settings: dict, path: str | None = None) -> bool:
         True on success, False if writing failed (already logged).
     """
     target = path or get_settings_path()
-    target_dir = os.path.dirname(target) or os.curdir
     payload = {"version": SETTINGS_VERSION, "settings": settings}
     try:
-        os.makedirs(target_dir, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(prefix=".settings-", suffix=".tmp", dir=target_dir)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        fd, tmp = tempfile.mkstemp(
+            prefix=".settings-", suffix=".tmp", dir=os.path.dirname(target)
+        )
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
             os.replace(tmp, target)
         except BaseException:
-            with contextlib.suppress(OSError):
+            try:
                 os.remove(tmp)
+            except OSError:
+                pass
             raise
         return True
     except Exception as e:
@@ -218,7 +219,7 @@ def save_settings(settings: dict, path: str | None = None) -> bool:
         return False
 
 
-def load_settings(path: str | None = None) -> dict | None:
+def load_settings(path: Optional[str] = None) -> Optional[dict]:
     """Load and validate Saved settings.
 
     Args:
@@ -249,7 +250,7 @@ def load_settings(path: str | None = None) -> dict | None:
     return validate_settings(raw)
 
 
-def clear_settings(path: str | None = None) -> bool:
+def clear_settings(path: Optional[str] = None) -> bool:
     """Delete the Settings file (Reset settings).
 
     Args:

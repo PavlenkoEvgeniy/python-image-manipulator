@@ -68,7 +68,6 @@
   "status.settings_reset": "Ayarlar varsayılanlara sıfırlandı",
   "status.processing": "İşleniyor…",
   "status.processing_item": "İşleniyor {index}/{total}: {name}",
-  "status.batch_failed": "Toplu işleme erken durdu: {error}",
   "status.done": "Tamamlandı: {total} öğeden {success} işlendi",
   "status.partial": "{total} öğeden {success} işlendi; {failed} başarısız",
   "dialog.ok": "Tamam",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Lütfen önce resim dosyaları ekleyin.",
   "dialog.cannot_load.title": "Resim Yüklenemiyor",
   "dialog.cannot_load.message": "{name} yüklenemedi:\n{error}",
-  "dialog.close_running.title": "İşlem sürüyor",
-  "dialog.close_running.message": "Toplu işlem hâlâ çalışıyor. Yine de pencere kapatılsın mı? Geçerli dosya eksik kalabilir ve kalanlar atlanır.",
   "dialog.reset.title": "Ayarları Sıfırla",
   "dialog.reset.message": "Tüm ayarlar varsayılanlarına döndürülsün mü?\n\nKayıtlı ayar dosyası silinecek.",
   "dialog.overwrite.title": "Özgün Dosyaların Üzerine Yaz",
@@ -114,6 +111,5 @@
   "about.close": "Kapat",
   "pipeline.not_found": "Giriş dosyası bulunamadı: {path}",
   "pipeline.unsupported_format": "Desteklenmeyen resim biçimi: {suffix}",
-  "pipeline.multiframe_overwrite": "{name} üzerine yazılamıyor: animasyonlu veya çok sayfalı görüntüler desteklenmiyor. Bir kopya kaydetmek için üzerine yazmayı kapatın.",
   "pipeline.failed": "İşlenemedi {name}: {error}"
 }

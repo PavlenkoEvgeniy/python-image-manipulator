@@ -2,6 +2,7 @@
 
 import os
 import sys
+from typing import Optional
 
 from PIL import Image
 
@@ -16,7 +17,7 @@ def get_icon_path() -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), ICON_FILENAME)
 
 
-def load_icon_image(size: int | None = None) -> Image.Image:
+def load_icon_image(size: Optional[int] = None) -> Image.Image:
     """Load the icon as an RGBA image, optionally resized to a square.
 
     Args:

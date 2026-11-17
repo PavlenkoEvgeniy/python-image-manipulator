@@ -49,12 +49,7 @@ class TestCalculateDimensions:
 
     @pytest.mark.parametrize(
         "values",
-        [
-            (0, 100, 100, 100),
-            (100, 0, 100, 100),
-            (100, 100, 0, 100),
-            (100, 100, 100, 0),
-        ],
+        [(0, 100, 100, 100), (100, 0, 100, 100), (100, 100, 0, 100), (100, 100, 100, 0)],
     )
     def test_rejects_non_positive_values(self, values):
         with pytest.raises(ValueError):

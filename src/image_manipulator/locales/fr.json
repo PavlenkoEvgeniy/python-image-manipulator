@@ -68,7 +68,6 @@
   "status.settings_reset": "Paramètres réinitialisés aux valeurs par défaut",
   "status.processing": "Traitement…",
   "status.processing_item": "Traitement {index}/{total} : {name}",
-  "status.batch_failed": "Le traitement par lots s'est arrêté prématurément : {error}",
   "status.done": "Terminé : {success} sur {total} traitées",
   "status.partial": "Traitées {success} sur {total} ; échecs : {failed}",
   "dialog.ok": "OK",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Ajoutez d'abord des fichiers image.",
   "dialog.cannot_load.title": "Impossible de charger l'image",
   "dialog.cannot_load.message": "Impossible de charger {name} :\n{error}",
-  "dialog.close_running.title": "Traitement en cours",
-  "dialog.close_running.message": "Le lot est encore en cours. Fermer la fenêtre quand même ? Le fichier actuel peut être incomplet et les autres seront ignorés.",
   "dialog.reset.title": "Réinitialiser les paramètres",
   "dialog.reset.message": "Rétablir tous les paramètres par défaut ?\n\nLe fichier de paramètres enregistré sera supprimé.",
   "dialog.overwrite.title": "Écraser les originaux",
@@ -114,6 +111,5 @@
   "about.close": "Fermer",
   "pipeline.not_found": "Fichier d'entrée introuvable : {path}",
   "pipeline.unsupported_format": "Format d'image non pris en charge : {suffix}",
-  "pipeline.multiframe_overwrite": "Impossible d'écraser {name} : les images animées ou multipages ne sont pas prises en charge. Désactivez l'écrasement pour enregistrer une copie.",
   "pipeline.failed": "Impossible de traiter {name} : {error}"
 }

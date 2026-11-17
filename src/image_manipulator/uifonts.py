@@ -5,10 +5,8 @@ name preferred font families. When one is installed it is applied to the Tk
 named fonts and used for the dialogs' explicit fonts.
 """
 
-import contextlib
-import tkinter as tk
 import tkinter.font as tkfont
-from collections.abc import Iterable
+from typing import Iterable, Optional, Tuple, Union
 
 _DEFAULT_FAMILY = "Arial"
 
@@ -26,16 +24,14 @@ _NAMED_FONTS = (
 _active_family = _DEFAULT_FAMILY
 
 
-def ui_font(
-    size: int, weight: str | None = None
-) -> tuple[str, int] | tuple[str, int, str]:
+def ui_font(size: int, weight: Optional[str] = None) -> Union[Tuple[str, int], Tuple[str, int, str]]:
     """Build a Tk font tuple in the active UI family."""
     if weight:
         return (_active_family, size, weight)
     return (_active_family, size)
 
 
-def apply_ui_family(root, candidates: Iterable[str]) -> str | None:
+def apply_ui_family(root, candidates: Iterable[str]) -> Optional[str]:
     """Apply the first installed preferred family, if any.
 
     Args:
@@ -63,8 +59,10 @@ def apply_ui_family(root, candidates: Iterable[str]) -> str | None:
             continue
         _active_family = family
         for name in _NAMED_FONTS:
-            with contextlib.suppress(tk.TclError):
+            try:
                 root.tk.call("font", "configure", name, "-family", family)
+            except tk.TclError:
+                pass
         return family
 
     _active_family = _DEFAULT_FAMILY

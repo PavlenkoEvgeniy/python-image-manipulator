@@ -6,15 +6,10 @@ The rest of the suite stays display-free.
 
 import gc
 import logging
-import os
-import sys
 
 import pytest
 
 tk = pytest.importorskip("tkinter")
-
-if sys.platform == "darwin" and os.environ.get("CI"):
-    pytest.skip("Tk GUI tests are unstable on macOS CI", allow_module_level=True)
 
 from image_manipulator import dialogs, i18n  # noqa: E402
 from image_manipulator.update_checker import UpdateInfo  # noqa: E402
@@ -50,13 +45,12 @@ def _walk(widget):
 
 def _image_labels(root):
     """Labels in the dialog widgets that display an image."""
-    return [
-        widget
-        for toplevel in root.winfo_children()
-        for widget in _walk(toplevel)
-        if "image" in widget.keys()  # noqa: SIM118 - Tk widgets are not mappings
-        and widget.cget("image")
-    ]
+    labels = []
+    for toplevel in root.winfo_children():
+        for widget in _walk(toplevel):
+            if "image" in widget.keys() and widget.cget("image"):
+                labels.append(widget)
+    return labels
 
 
 def test_about_icon_survives_dialog_garbage_collection(root):
@@ -95,7 +89,9 @@ def test_update_dialog_opens_the_direct_download(root, monkeypatch):
     assert opened == ["https://example.com/ImageManipulator-linux"]
 
 
-def test_message_dialog_survives_a_window_deleted_while_waiting(root, monkeypatch):
+def test_message_dialog_survives_a_window_deleted_while_waiting(
+    root, monkeypatch
+):
     # The user closes the dialog while wait_visibility() is pending. The
     # constructor must not let TclError escape: it used to propagate out of
     # the polling callback and kill event processing forever, which froze
@@ -108,7 +104,7 @@ def test_message_dialog_survives_a_window_deleted_while_waiting(root, monkeypatc
     monkeypatch.setattr(tk.Misc, "winfo_ismapped", lambda self: False)
     monkeypatch.setattr(tk.Misc, "wait_visibility", raise_deleted)
 
-    dialogs.MessageDialogs.show_info("Finished", "All done", parent=root)
+    dialogs.ErrorDialog.show_info("Finished", "All done", parent=root)
 
 
 def test_about_icon_failure_is_logged(root, monkeypatch, caplog):
@@ -122,29 +118,3 @@ def test_about_icon_failure_is_logged(root, monkeypatch, caplog):
 
     assert "Could not load the About dialog icon" in caplog.text
     assert _image_labels(root) == []
-
-
-def test_update_dialog_rewrites_an_insecure_url(root, monkeypatch, caplog):
-    opened = []
-    monkeypatch.setattr(
-        dialogs.webbrowser, "open", lambda url: opened.append(url) or False
-    )
-    info = UpdateInfo(
-        version="9.0.0",
-        download_url="http://insecure.example/linux",
-        release_url="https://example.com/release",
-    )
-
-    dialog = dialogs.UpdateDialog(root, info)
-    with caplog.at_level(logging.WARNING, logger=dialogs.logger.name):
-        dialog._download()
-
-    assert opened == ["https://example.com/release"]
-    assert "Could not open the download page" in caplog.text
-
-
-def test_message_dialogs_warning_and_error_when_mapped(root, monkeypatch):
-    monkeypatch.setattr(tk.Misc, "winfo_ismapped", lambda self: True)
-
-    dialogs.MessageDialogs.show_warning("Warning", "Careful", parent=root)
-    dialogs.MessageDialogs.show_error("Error", "Broken", parent=root)

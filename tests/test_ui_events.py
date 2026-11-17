@@ -10,7 +10,6 @@ display.
 
 import logging
 import queue
-import threading
 from types import SimpleNamespace
 
 import pytest
@@ -18,13 +17,8 @@ from PIL import Image
 
 pytest.importorskip("tkinter")
 
-from image_manipulator import ui
-from image_manipulator.pipeline import ImageManipulator
-from image_manipulator.ui_events import CompleteEvent, StatusEvent
-
-
-class _PoisonEvent:
-    """Event that makes the dispatcher raise."""
+from image_manipulator import ui  # noqa: E402
+from image_manipulator.pipeline import ImageManipulator  # noqa: E402
 
 
 class _EventRecorder:
@@ -35,7 +29,7 @@ class _EventRecorder:
         self.applied = []
 
     def _dispatch_event(self, event):
-        if isinstance(event, _PoisonEvent):
+        if event[0] == "poison":
             raise RuntimeError("handler blew up")
         self.applied.append(event)
 
@@ -43,18 +37,18 @@ class _EventRecorder:
 class TestEventDrain:
     def test_one_bad_event_does_not_stop_the_others(self, caplog):
         app = _EventRecorder()
-        app._events.put(_PoisonEvent())
-        app._events.put(StatusEvent("Processing 1/2: a.png"))
-        app._events.put(CompleteEvent(2, 2, [], "/tmp", False))
+        app._events.put(("poison",))
+        app._events.put(("status", "Processing 1/2: a.png"))
+        app._events.put(("complete", 2, 2, [], "/tmp", False))
 
         with caplog.at_level(logging.ERROR, logger=ui.logger.name):
             ui.ManipulatorApp._drain_events(app)
 
         assert app.applied == [
-            StatusEvent("Processing 1/2: a.png"),
-            CompleteEvent(2, 2, [], "/tmp", False),
+            ("status", "Processing 1/2: a.png"),
+            ("complete", 2, 2, [], "/tmp", False),
         ]
-        assert "Failed to apply event" in caplog.text
+        assert "poison" in caplog.text
 
     def test_drain_returns_normally_when_the_queue_is_empty(self):
         app = _EventRecorder()
@@ -84,130 +78,10 @@ class TestPollLoop:
         with caplog.at_level(logging.ERROR, logger=ui.logger.name):
             ui.ManipulatorApp._poll_events(StubApp())  # must not raise
 
-        assert [(ms, cb.__name__) for ms, cb in scheduled] == [(100, "_poll_events")]
+        assert [(ms, cb.__name__) for ms, cb in scheduled] == [
+            (100, "_poll_events")
+        ]
         assert "Event polling failed" in caplog.text
-
-
-class TestUnexpectedWorkerFailure:
-    def test_failure_is_reported_in_the_completion_event(self, caplog):
-        class BrokenManipulator:
-            def process_path(self, *args, **kwargs):
-                raise RuntimeError("boom")
-
-        app = SimpleNamespace(_events=queue.Queue(), _cancel_event=threading.Event())
-
-        with caplog.at_level(logging.ERROR, logger=ui.logger.name):
-            ui.ManipulatorApp._process_worker(
-                app, ["a.png", "b.png"], BrokenManipulator(), "/tmp", False
-            )
-
-        events = []
-        while not app._events.empty():
-            events.append(app._events.get_nowait())
-        completes = [event for event in events if isinstance(event, CompleteEvent)]
-
-        assert len(completes) == 1
-        complete = completes[0]
-        assert (complete.success, complete.total) == (0, 2)
-        assert complete.errors
-        assert "boom" in complete.errors[0]
-        assert (complete.output_dir, complete.overwrite) == ("/tmp", False)
-        assert "Batch worker stopped early" in caplog.text
-
-
-class TestPreviewWorker:
-    def test_worker_posts_the_rendered_image(self):
-        image = Image.new("RGB", (32, 24), "red")
-
-        class StubManipulator:
-            def render(self, source):
-                return source.copy()
-
-        app = SimpleNamespace(_events=queue.Queue())
-
-        ui.ManipulatorApp._preview_worker(app, 4, StubManipulator(), image)
-
-        event = app._events.get_nowait()
-        assert event.generation == 4
-        assert event.image.size == image.size
-        assert event.error is None
-
-    def test_worker_posts_an_error_instead_of_raising(self):
-        class BrokenManipulator:
-            def render(self, source):
-                raise RuntimeError("preview failed")
-
-        app = SimpleNamespace(_events=queue.Queue())
-
-        ui.ManipulatorApp._preview_worker(
-            app, 2, BrokenManipulator(), Image.new("RGB", (8, 8))
-        )
-
-        event = app._events.get_nowait()
-        assert event.generation == 2
-        assert event.image is None
-        assert isinstance(event.error, RuntimeError)
-
-    def test_stale_preview_is_ignored(self):
-        shown = []
-
-        class StubVar:
-            def set(self, value):
-                pass
-
-        app = SimpleNamespace(
-            _preview_generation=5,
-            output_size_var=StubVar(),
-            status_var=StubVar(),
-            _show_image=lambda image: shown.append(image),
-        )
-        image = Image.new("RGB", (8, 8), "red")
-
-        ui.ManipulatorApp._on_preview_ready(app, 4, image, None)
-        assert shown == []
-
-        ui.ManipulatorApp._on_preview_ready(app, 5, image, None)
-        assert shown == [image]
-
-
-class TestCloseDuringBatch:
-    @staticmethod
-    def _app():
-        destroyed = []
-
-        class StubRoot:
-            def destroy(self):
-                destroyed.append(True)
-
-        app = SimpleNamespace(
-            _processing=True,
-            _cancel_event=threading.Event(),
-            root=StubRoot(),
-            _cancel_scheduled_preview=lambda: None,
-            _cancel_scheduled_settings_save=lambda: None,
-            _save_settings_now=lambda: None,
-        )
-        return app, destroyed
-
-    def test_cancelled_confirmation_keeps_the_window_open(self, monkeypatch):
-        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **_: False)
-        app, destroyed = self._app()
-
-        ui.ManipulatorApp._on_close(app)
-
-        assert destroyed == []
-        assert app._cancel_event.is_set() is False
-
-    def test_confirmed_close_cancels_the_worker_and_destroys_the_window(
-        self, monkeypatch
-    ):
-        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **_: True)
-        app, destroyed = self._app()
-
-        ui.ManipulatorApp._on_close(app)
-
-        assert app._cancel_event.is_set() is True
-        assert destroyed == [True]
 
 
 class TestSecondBatchRun:
@@ -220,7 +94,7 @@ class TestSecondBatchRun:
         output = tmp_path / "output"
         output.mkdir()
         manipulator = ImageManipulator(target_width=24, target_height=18)
-        app = SimpleNamespace(_events=queue.Queue(), _cancel_event=threading.Event())
+        app = SimpleNamespace(_events=queue.Queue())
 
         for _ in range(2):
             ui.ManipulatorApp._process_worker(
@@ -230,12 +104,12 @@ class TestSecondBatchRun:
         events = []
         while not app._events.empty():
             events.append(app._events.get_nowait())
-        statuses = [e for e in events if isinstance(e, StatusEvent)]
-        completes = [e for e in events if isinstance(e, CompleteEvent)]
+        statuses = [e for e in events if e[0] == "status"]
+        completes = [e for e in events if e[0] == "complete"]
 
         # A repeated batch run is a full pass: per-item progress both times,
         # a completion event for every run, and new results that never
         # replace the previous run's files.
         assert len(statuses) == 6
-        assert [e.success for e in completes] == [3, 3]
+        assert [e[1] for e in completes] == [3, 3]
         assert len(list(output.iterdir())) == 6

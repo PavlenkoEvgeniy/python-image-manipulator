@@ -1,6 +1,6 @@
 ; Inno Setup script for the Image Manipulator Windows installer.
 ; Build with:
-;   ISCC.exe /DMyAppVersion=<version> /DRepoRoot=<repo> \
+;   ISCC.exe /DMyAppVersion=1.6.0 /DRepoRoot=<repo> \
 ;       /DSourceExe=<repo>\dist\ImageManipulator-windows.exe \
 ;       /DOutputDir=<repo>\dist\installers packaging\windows\image-manipulator.iss
 

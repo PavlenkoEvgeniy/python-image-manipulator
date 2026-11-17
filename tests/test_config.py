@@ -1,11 +1,6 @@
 """Tests for Application configuration."""
 
-from pathlib import Path
-
-from image_manipulator import __version__
 from image_manipulator.config import AppConfig, config
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestPresets:
@@ -38,15 +33,6 @@ class TestDefaults:
 
     def test_config_is_an_appconfig(self):
         assert isinstance(AppConfig(), AppConfig)
-
-    def test_version_has_one_source(self):
-        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-
-        assert config.version == __version__
-        assert 'dynamic = ["version"]' in pyproject
-        assert 'version = {attr = "image_manipulator.__version__"}' in pyproject
-        assert "- **Version:** [latest release]" in readme
 
 
 class TestDefaultOutputDirectory:

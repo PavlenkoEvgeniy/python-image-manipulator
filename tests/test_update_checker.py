@@ -67,11 +67,15 @@ class TestDownloadSelection:
             == "https://example.com/macos.dmg"
         )
         assert (
-            update_checker.pick_download_url(ASSETS, "linux", package_kind="deb")
+            update_checker.pick_download_url(
+                ASSETS, "linux", package_kind="deb"
+            )
             == "https://example.com/linux.deb"
         )
         assert (
-            update_checker.pick_download_url(ASSETS, "linux", package_kind="rpm")
+            update_checker.pick_download_url(
+                ASSETS, "linux", package_kind="rpm"
+            )
             == "https://example.com/linux.rpm"
         )
 
@@ -79,13 +83,17 @@ class TestDownloadSelection:
         only_rpm = [ASSETS[1]]
 
         assert (
-            update_checker.pick_download_url(only_rpm, "linux", package_kind="deb")
+            update_checker.pick_download_url(
+                only_rpm, "linux", package_kind="deb"
+            )
             == "https://example.com/linux.rpm"
         )
 
     def test_falls_back_to_the_release_page(self):
         assert (
-            update_checker.pick_download_url([], "linux", package_kind="deb")
+            update_checker.pick_download_url(
+                [], "linux", package_kind="deb"
+            )
             == update_checker.RELEASES_PAGE
         )
         insecure = [
@@ -95,7 +103,9 @@ class TestDownloadSelection:
             }
         ]
         assert (
-            update_checker.pick_download_url(insecure, "linux", package_kind="deb")
+            update_checker.pick_download_url(
+                insecure, "linux", package_kind="deb"
+            )
             == update_checker.RELEASES_PAGE
         )
 
@@ -110,10 +120,12 @@ class TestLinuxPackageKind:
         return str(path)
 
     def test_debian_family(self, tmp_path):
-        path = self._os_release(tmp_path, "NAME=Test\nID=ubuntu\nID_LIKE=debian\n")
+        path = self._os_release(tmp_path, "ID=ubuntu\nID_LIKE=debian\n")
 
         assert (
-            update_checker.linux_package_kind(os_release=path, which=lambda _: None)
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
             == "deb"
         )
 
@@ -121,7 +133,9 @@ class TestLinuxPackageKind:
         path = self._os_release(tmp_path, "ID=fedora\n")
 
         assert (
-            update_checker.linux_package_kind(os_release=path, which=lambda _: None)
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
             == "rpm"
         )
 
@@ -129,7 +143,9 @@ class TestLinuxPackageKind:
         path = self._os_release(tmp_path, 'ID=custom\nID_LIKE="rhel centos"\n')
 
         assert (
-            update_checker.linux_package_kind(os_release=path, which=lambda _: None)
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
             == "rpm"
         )
 
@@ -155,7 +171,9 @@ class TestLinuxPackageKind:
         path = self._os_release(tmp_path, "")
 
         assert (
-            update_checker.linux_package_kind(os_release=path, which=lambda _: None)
+            update_checker.linux_package_kind(
+                os_release=path, which=lambda _: None
+            )
             == "deb"
         )
 

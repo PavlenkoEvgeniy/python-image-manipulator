@@ -1,15 +1,8 @@
 """Tk smoke tests for the interface language (skipped without a display)."""
 
-import os
-import sys
-import time
-
 import pytest
 
 tk = pytest.importorskip("tkinter")
-
-if sys.platform == "darwin" and os.environ.get("CI"):
-    pytest.skip("Tk GUI tests are unstable on macOS CI", allow_module_level=True)
 
 from image_manipulator import ui  # noqa: E402
 from image_manipulator.update_checker import UpdateInfo  # noqa: E402
@@ -57,71 +50,12 @@ def test_snapshot_stores_canonical_enum_tokens(app):
     assert snapshot["language"] == "ru"
 
 
-def test_browse_output_starts_in_the_current_folder(app, monkeypatch, tmp_path):
-    application, _ = app
-    application.output_dir_var.set(str(tmp_path))
-    calls = []
-    monkeypatch.setattr(
-        ui.filedialog,
-        "askdirectory",
-        lambda **kwargs: calls.append(kwargs) or "",
-    )
-
-    application.browse_output_dir()
-
-    assert calls[0]["initialdir"] == str(tmp_path)
-
-
-def test_browse_output_falls_back_to_the_default_folder(app, monkeypatch):
-    application, _ = app
-    application.output_dir_var.set("/path/that/does/not/exist")
-    calls = []
-    monkeypatch.setattr(
-        ui.filedialog,
-        "askdirectory",
-        lambda **kwargs: calls.append(kwargs) or "",
-    )
-
-    application.browse_output_dir()
-
-    assert calls[0]["initialdir"] == application._default_output_dir()
-
-
-def _pump(root, seconds=0.5):
-    deadline = time.time() + seconds
-    while time.time() < deadline:
-        root.update()
-        time.sleep(0.02)
-
-
-def test_reset_does_not_resave_and_announces_restart(app, monkeypatch):
-    application, root = app
-    saved, cleared, notices = [], [], []
-    monkeypatch.setattr(ui, "save_settings", lambda *a, **_: saved.append(True) or True)
-    monkeypatch.setattr(
-        ui, "clear_settings", lambda *a, **_: cleared.append(True) or True
-    )
-    monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **_: True)
-    monkeypatch.setattr(ui, "detect_system_language", lambda: "en")
-    monkeypatch.setattr(
-        ui.MessageDialogs,
-        "show_info",
-        staticmethod(lambda *a, **_: notices.append(a)),
-    )
-
-    application.reset_settings()
-    _pump(root)
-
-    assert cleared == [True]
-    assert saved == []
-    assert application._save_debouncer.pending is False
-    assert notices
-
-
 def test_update_result_opens_the_update_dialog(app, monkeypatch):
     application, _ = app
     captured = []
-    monkeypatch.setattr(ui, "UpdateDialog", lambda parent, info: captured.append(info))
+    monkeypatch.setattr(
+        ui, "UpdateDialog", lambda parent, info: captured.append(info)
+    )
     info = UpdateInfo(
         version="9.0.0",
         download_url="https://example.com/linux",

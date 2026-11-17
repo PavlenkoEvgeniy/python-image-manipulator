@@ -68,7 +68,6 @@
   "status.settings_reset": "Instellingen hersteld naar de standaardwaarden",
   "status.processing": "Verwerken…",
   "status.processing_item": "Bezig met {index}/{total}: {name}",
-  "status.batch_failed": "Batchverwerking is vroegtijdig gestopt: {error}",
   "status.done": "Klaar: {success} van {total} verwerkt",
   "status.partial": "{success} van {total} verwerkt; {failed} mislukt",
   "dialog.ok": "OK",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Voeg eerst afbeeldingsbestanden toe.",
   "dialog.cannot_load.title": "Afbeelding kan niet worden geladen",
   "dialog.cannot_load.message": "Kan {name} niet laden:\n{error}",
-  "dialog.close_running.title": "Verwerking bezig",
-  "dialog.close_running.message": "De batch wordt nog uitgevoerd. Venster toch sluiten? Het huidige bestand kan onvolledig zijn en de rest wordt overgeslagen.",
   "dialog.reset.title": "Instellingen herstellen",
   "dialog.reset.message": "Alle instellingen terugzetten naar de standaardwaarden?\n\nHet opgeslagen instellingenbestand wordt verwijderd.",
   "dialog.overwrite.title": "Originele bestanden overschrijven",
@@ -114,6 +111,5 @@
   "about.close": "Sluiten",
   "pipeline.not_found": "Invoerbestand niet gevonden: {path}",
   "pipeline.unsupported_format": "Niet-ondersteund afbeeldingsformaat: {suffix}",
-  "pipeline.multiframe_overwrite": "Kan {name} niet overschrijven: geanimeerde of meerpagina-afbeeldingen worden niet ondersteund. Schakel overschrijven uit om een kopie op te slaan.",
   "pipeline.failed": "Kan {name} niet verwerken: {error}"
 }

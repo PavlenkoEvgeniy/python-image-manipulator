@@ -3,10 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
-from typing import ClassVar
-
-from . import __version__ as _package_version
-from .formats import OUTPUT_FORMATS, SUPPORTED_INPUT_SUFFIXES
+from typing import Optional, Tuple
 
 
 @dataclass
@@ -14,15 +11,24 @@ class AppConfig:
     """Application configuration shared by the UI and the pipeline."""
 
     name: str = "Image Manipulator"
-    version: str = _package_version
+    version: str = "1.8.0"
     default_language: str = "en"
     default_check_updates: bool = True
     window_width: int = 1100
     window_height: int = 800
 
     # Supported image and font formats
-    valid_extensions: tuple[str, ...] = SUPPORTED_INPUT_SUFFIXES
-    font_extensions: tuple[str, ...] = (".ttf", ".otf")
+    valid_extensions: Tuple[str, ...] = (
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".bmp",
+        ".gif",
+        ".tiff",
+        ".tif",
+        ".webp",
+    )
+    font_extensions: Tuple[str, ...] = (".ttf", ".otf")
 
     # Resize defaults
     default_width: int = 800
@@ -32,14 +38,14 @@ class AppConfig:
     default_rotate_portrait_to_landscape: bool = False
     default_output_format: str = "JPEG"
     default_jpeg_quality: int = 95
-    output_formats: tuple[str, ...] = OUTPUT_FORMATS
+    output_formats: Tuple[str, ...] = ("JPEG", "PNG", "WEBP", "BMP")
     min_dimension: int = 1
     max_dimension: int = 20000
     min_jpeg_quality: int = 1
     max_jpeg_quality: int = 100
 
     # Preset resolutions
-    presets: tuple[tuple[str, int, int], ...] = (
+    presets: Tuple[Tuple[str, int, int], ...] = (
         ("Custom", 0, 0),
         ("1920x1080", 1920, 1080),
         ("1280x720", 1280, 720),
@@ -58,30 +64,14 @@ class AppConfig:
     default_font_style: str = "Normal"
     default_font_family: str = "Arial"
 
-    # One registry per vocabulary: canonical token -> translation key and
-    # the font attributes used to resolve and synthesize the style.
-    STYLE_SPECS: ClassVar[dict[str, tuple[str, str, str, bool, bool]]] = {
-        "Normal": ("style.normal", "", "Regular", False, False),
-        "Bold": ("style.bold", " Bold", "Bold", True, False),
-        "Italic": ("style.italic", " Italic", "Italic", False, True),
-        "Bold Italic": (
-            "style.bold_italic",
-            " Bold Italic",
-            "Bold Italic",
-            True,
-            True,
-        ),
-    }
-    POSITION_KEYS: ClassVar[dict[str, str]] = {
-        "top left": "position.top_left",
-        "top right": "position.top_right",
-        "bottom left": "position.bottom_left",
-        "bottom right": "position.bottom_right",
-        "center": "position.center",
-    }
-
-    font_styles: tuple[str, ...] = tuple(STYLE_SPECS)
-    text_positions: tuple[str, ...] = tuple(POSITION_KEYS)
+    font_styles: Tuple[str, ...] = ("Normal", "Bold", "Italic", "Bold Italic")
+    text_positions: Tuple[str, ...] = (
+        "top left",
+        "top right",
+        "bottom left",
+        "bottom right",
+        "center",
+    )
 
     min_font_size: int = 10
     max_font_size: int = 200
@@ -92,7 +82,7 @@ class AppConfig:
     update_check_startup_delay_ms: int = 1500
 
     # Fallback system fonts
-    system_fonts: tuple[str, ...] = (
+    system_fonts: Tuple[str, ...] = (
         "arial.ttf",
         "Arial.ttf",
         "DejaVuSans.ttf",
@@ -104,7 +94,7 @@ class AppConfig:
         """Default output directory name."""
         return "processed_images"
 
-    def default_output_directory(self, home: str | None = None) -> str:
+    def default_output_directory(self, home: Optional[str] = None) -> str:
         """Default output folder: ``processed_images`` on the user's Desktop.
 
         Falls back to the home directory when there is no Desktop folder, for
@@ -115,7 +105,7 @@ class AppConfig:
         base = desktop if os.path.isdir(desktop) else user_home
         return os.path.join(base, self.default_output_dir)
 
-    def get_preset_dimensions(self, preset_name: str) -> tuple[int, int]:
+    def get_preset_dimensions(self, preset_name: str) -> Tuple[int, int]:
         """Return (width, height) for a named preset, or (0, 0)."""
         for name, width, height in self.presets:
             if name == preset_name:
@@ -128,6 +118,15 @@ def get_app_dir() -> str:
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
+
+
+def resource_path(relative_path: str) -> str:
+    """Get an absolute path to a resource (works with PyInstaller)."""
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 # Global config instance

@@ -1,11 +1,11 @@
 """Pure resizing logic: target dimensions and pixel resampling."""
 
 from enum import Enum
+from typing import Tuple
 
 from PIL import Image
 
 from .config import config
-from .formats import FORMAT_BY_NAME
 
 
 class OutputFormat(Enum):
@@ -19,12 +19,7 @@ class OutputFormat(Enum):
     @property
     def extension(self) -> str:
         """File extension (without the dot) for this format."""
-        image_format = FORMAT_BY_NAME.get(self.value)
-        return (
-            image_format.output_extension
-            if image_format is not None and image_format.output_extension
-            else self.value.lower()
-        )
+        return "jpg" if self.value == "JPEG" else self.value.lower()
 
     @classmethod
     def from_name(cls, name: str) -> "OutputFormat":
@@ -41,7 +36,7 @@ def calculate_dimensions(
     target_width: int,
     target_height: int,
     maintain_aspect: bool = True,
-) -> tuple[int, int]:
+) -> Tuple[int, int]:
     """Calculate the final pixel size of a resized image.
 
     With ``maintain_aspect`` the image is scaled to fit inside the target box

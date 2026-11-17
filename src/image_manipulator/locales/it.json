@@ -68,7 +68,6 @@
   "status.settings_reset": "Impostazioni ripristinate ai valori predefiniti",
   "status.processing": "Elaborazione…",
   "status.processing_item": "Elaborazione {index}/{total}: {name}",
-  "status.batch_failed": "L'elaborazione batch si è interrotta: {error}",
   "status.done": "Completato: {success} di {total} elaborate",
   "status.partial": "Elaborate {success} di {total}; {failed} non riuscite",
   "dialog.ok": "OK",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Aggiungi prima dei file immagine.",
   "dialog.cannot_load.title": "Impossibile caricare l'immagine",
   "dialog.cannot_load.message": "Impossibile caricare {name}:\n{error}",
-  "dialog.close_running.title": "Elaborazione in corso",
-  "dialog.close_running.message": "Il batch è ancora in esecuzione. Chiudere comunque la finestra? Il file corrente potrebbe essere incompleto e gli altri verranno saltati.",
   "dialog.reset.title": "Ripristina impostazioni",
   "dialog.reset.message": "Ripristinare tutte le impostazioni ai valori predefiniti?\n\nIl file delle impostazioni salvato verrà rimosso.",
   "dialog.overwrite.title": "Sovrascrivi gli originali",
@@ -114,6 +111,5 @@
   "about.close": "Chiudi",
   "pipeline.not_found": "File di input non trovato: {path}",
   "pipeline.unsupported_format": "Formato immagine non supportato: {suffix}",
-  "pipeline.multiframe_overwrite": "Impossibile sovrascrivere {name}: le immagini animate o multipagina non sono supportate. Disattiva la sovrascrittura per salvare una copia.",
   "pipeline.failed": "Impossibile elaborare {name}: {error}"
 }

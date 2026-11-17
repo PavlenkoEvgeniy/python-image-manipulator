@@ -1,19 +1,13 @@
 """Tests for the resize → text → save pipeline."""
 
-import os
 from pathlib import Path
 
-import pytest
 from PIL import Image
 
-from image_manipulator.pipeline import (
-    ImageManipulator,
-    _normalize_mode,
-    load_image,
-    save_image,
-)
+from image_manipulator.pipeline import ImageManipulator, load_image
 from image_manipulator.resize import OutputFormat
 from image_manipulator.text_overlay import TextOverlay
+
 
 # EXIF orientation tag id
 ORIENTATION_TAG = 0x0112
@@ -39,10 +33,9 @@ class TestRender:
 
         assert result.size == (200, 100)
         # Text is present on the resized result
-        assert (
-            result.tobytes()
-            != image.resize((200, 100), Image.Resampling.LANCZOS).tobytes()
-        )
+        assert result.tobytes() != image.resize(
+            (200, 100), Image.Resampling.LANCZOS
+        ).tobytes()
 
     def test_without_text_only_resizes(self):
         image = Image.new("RGB", (400, 200), "red")
@@ -283,173 +276,3 @@ class TestOrientation:
         with Image.open(result.output_path) as saved:
             # Display orientation is portrait: 200x400 scaled by 2.5
             assert saved.size == (500, 1000)
-
-
-class TestHighDepthNormalization:
-    """16-bit and float images must be scaled, not clipped."""
-
-    @pytest.mark.parametrize(
-        ("mode", "values"),
-        [
-            ("I;16", [0, 32768, 65535]),
-            ("I", [0, 32768, 65535]),
-            ("F", [0.0, 0.5, 1.0]),
-        ],
-    )
-    def test_midtones_survive(self, mode, values):
-        image = Image.new(mode, (3, 1))
-        image.putdata(values)
-
-        normalized = _normalize_mode(image)
-
-        assert normalized.mode == "RGB"
-        pixels = normalized.tobytes()
-        assert pixels[0:3] == bytes((0, 0, 0))
-        assert 100 <= pixels[3] <= 160
-        assert pixels[6:9] == bytes((255, 255, 255))
-
-    def test_16_bit_png_round_trip(self, tmp_path):
-        source = tmp_path / "scan.png"
-        image = Image.new("I;16", (3, 1))
-        image.putdata([0, 32768, 65535])
-        image.save(source)
-
-        result = ImageManipulator(
-            target_width=3,
-            target_height=1,
-            maintain_aspect=False,
-            output_format=OutputFormat.PNG,
-        ).process_path(source, tmp_path / "out")
-
-        assert result.success is True
-        with Image.open(result.output_path) as saved:
-            pixels = saved.convert("RGB").tobytes()
-        assert 100 <= pixels[3] <= 160
-
-
-class TestMultiframeOverwrite:
-    """Replacing an animated or multi-page file would destroy structure."""
-
-    @staticmethod
-    def _animated_frames():
-        return [Image.new("RGB", (40, 40), color) for color in ("red", "green", "blue")]
-
-    def test_animated_gif_is_not_overwritten(self, tmp_path):
-        source = tmp_path / "animated.gif"
-        frames = self._animated_frames()
-        frames[0].save(
-            source, save_all=True, append_images=frames[1:], duration=100, loop=0
-        )
-        original = source.read_bytes()
-
-        result = ImageManipulator(target_width=20, target_height=20).process_path(
-            source, tmp_path, overwrite=True
-        )
-
-        assert result.success is False
-        assert "Cannot overwrite" in result.error
-        assert source.read_bytes() == original
-        with Image.open(source) as saved:
-            assert saved.n_frames == 3
-
-    def test_multipage_tiff_is_not_overwritten(self, tmp_path):
-        source = tmp_path / "pages.tiff"
-        frames = self._animated_frames()
-        frames[0].save(source, save_all=True, append_images=frames[1:], format="TIFF")
-        original = source.read_bytes()
-
-        result = ImageManipulator(target_width=20, target_height=20).process_path(
-            source, tmp_path, overwrite=True
-        )
-
-        assert result.success is False
-        assert "Cannot overwrite" in result.error
-        assert source.read_bytes() == original
-        with Image.open(source) as saved:
-            assert saved.n_frames == 3
-
-    def test_animated_webp_is_not_overwritten(self, tmp_path):
-        source = tmp_path / "animated.webp"
-        frames = self._animated_frames()
-        try:
-            frames[0].save(
-                source, save_all=True, append_images=frames[1:], duration=100
-            )
-        except (OSError, ValueError):
-            pytest.skip("this Pillow build cannot write animated WEBP")
-        with Image.open(source) as saved:
-            if saved.n_frames == 1:
-                pytest.skip("this Pillow build did not preserve WEBP animation")
-
-        result = ImageManipulator(target_width=20, target_height=20).process_path(
-            source, tmp_path, overwrite=True
-        )
-
-        assert result.success is False
-        assert "Cannot overwrite" in result.error
-
-    def test_transparent_gif_keeps_transparency(self, tmp_path):
-        source = tmp_path / "transparent.gif"
-        image = Image.new("RGBA", (40, 40), (0, 0, 0, 0))
-        image.putpixel((20, 20), (255, 0, 0, 255))
-        image.save(source, format="GIF")
-
-        result = ImageManipulator(target_width=20, target_height=20).process_path(
-            source, tmp_path, overwrite=True
-        )
-
-        assert result.success is True
-        with Image.open(source) as saved:
-            assert saved.info.get("transparency") is not None
-            rgba = saved.convert("RGBA")
-            assert rgba.getpixel((0, 0))[3] == 0
-
-
-class TestAtomicSave:
-    """A failed write must never damage the destination file."""
-
-    @staticmethod
-    def _fail_after_truncating(monkeypatch):
-        def failing_save(self, target, *args, **kwargs):
-            Path(target).write_bytes(b"partial")
-            raise OSError("disk full")
-
-        monkeypatch.setattr(Image.Image, "save", failing_save)
-
-    def test_failed_save_leaves_the_destination_untouched(self, tmp_path, monkeypatch):
-        destination = _make_image(tmp_path / "photo.png")
-        original = destination.read_bytes()
-        self._fail_after_truncating(monkeypatch)
-
-        with pytest.raises(OSError):
-            save_image(Image.new("RGB", (10, 10)), destination, "PNG")
-
-        assert destination.read_bytes() == original
-        assert list(tmp_path.glob(".photo-*.tmp")) == []
-
-    def test_failed_overwrite_reports_an_error_and_keeps_the_original(
-        self, tmp_path, monkeypatch
-    ):
-        source = _make_image(tmp_path / "photo.png")
-        original = source.read_bytes()
-        self._fail_after_truncating(monkeypatch)
-
-        result = ImageManipulator(target_width=10, target_height=10).process_path(
-            source, tmp_path, overwrite=True
-        )
-
-        assert result.success is False
-        assert source.read_bytes() == original
-        assert list(tmp_path.glob(".photo-*.tmp")) == []
-
-    @pytest.mark.skipif(os.name != "posix", reason="POSIX file permissions")
-    def test_overwrite_preserves_file_permissions(self, tmp_path):
-        source = _make_image(tmp_path / "photo.png")
-        os.chmod(source, 0o640)
-
-        result = ImageManipulator(target_width=10, target_height=10).process_path(
-            source, tmp_path, overwrite=True
-        )
-
-        assert result.success is True
-        assert source.stat().st_mode & 0o777 == 0o640

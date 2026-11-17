@@ -4,7 +4,6 @@ import logging
 import tkinter as tk
 import webbrowser
 from tkinter import ttk
-from typing import ClassVar
 
 from PIL import ImageTk
 
@@ -15,47 +14,30 @@ from .icon import load_icon_image
 from .positioning import center_over_parent
 from .uifonts import ui_font
 
-Window = tk.Tk | tk.Toplevel
-
 logger = logging.getLogger(__name__)
 
 
-class _ModalDialog:
-    """Shared Toplevel lifecycle for the application dialogs."""
-
-    def __init__(self, parent: Window, title: str) -> None:
-        self.window = tk.Toplevel(parent)
-        self.window.title(title)
-        self.window.resizable(False, False)
-        self.window.transient(parent)
-        self.window.withdraw()
-        self._create_content()
-        self.window.deiconify()
-        center_over_parent(window=self.window, parent=parent)
-        self._activate()
-
-    def _create_content(self) -> None:
-        """Build the dialog body."""
-        raise NotImplementedError
-
-    def _activate(self) -> None:
-        """Make the dialog modal and focus its default control."""
-        self.window.grab_set()
-
-
-class AboutDialog(_ModalDialog):
+class AboutDialog:
     """About dialog window."""
 
-    def __init__(self, parent: Window):
+    def __init__(self, parent: tk.Wm):
         """Create the about dialog.
 
         Args:
             parent: Parent window.
         """
-        super().__init__(parent, tr("about.title", name=config.name))
+        self.window = tk.Toplevel(parent)
+        self.window.title(tr("about.title", name=config.name))
+        self.window.resizable(False, False)
+        self.window.transient(parent)
 
-    def _activate(self) -> None:
-        super()._activate()
+        # Build content first, then size the dialog from its real dimensions
+        # and center it on the parent window before it settles.
+        self.window.withdraw()
+        self._create_content()
+        self.window.deiconify()
+        center_over_parent(window=self.window, parent=parent)
+        self.window.grab_set()
         self.window.focus_set()
 
     def _create_content(self) -> None:
@@ -70,7 +52,7 @@ class AboutDialog(_ModalDialog):
             # only by them is destroyed by garbage collection: Tk deletes the
             # image while the label keeps its size, leaving blank space.
             logo = tk.Label(frame, image=photo, borderwidth=0)
-            logo.image = photo  # type: ignore[attr-defined]
+            logo.image = photo
             logo.pack(pady=(0, 4))
         except Exception as exc:
             logger.warning("Could not load the About dialog icon: %s", exc)
@@ -109,10 +91,10 @@ class AboutDialog(_ModalDialog):
         ttk.Button(frame, text=tr("about.close"), command=self.window.destroy).pack()
 
 
-class UpdateDialog(_ModalDialog):
+class UpdateDialog:
     """Offer a direct download link for a newer release."""
 
-    def __init__(self, parent: Window, info) -> None:
+    def __init__(self, parent: tk.Wm, info) -> None:
         """Create the update dialog.
 
         Args:
@@ -120,10 +102,12 @@ class UpdateDialog(_ModalDialog):
             info: UpdateInfo describing the newer release.
         """
         self.info = info
-        super().__init__(parent, tr("dialog.update.title"))
+        self.window = tk.Toplevel(parent)
+        self.window.title(tr("dialog.update.title"))
+        self.window.resizable(False, False)
+        self.window.transient(parent)
 
-    def _create_content(self) -> None:
-        """Create the dialog content."""
+        self.window.withdraw()
         frame = ttk.Frame(self.window, padding="20")
         frame.pack(fill=tk.BOTH, expand=True)
 
@@ -131,7 +115,7 @@ class UpdateDialog(_ModalDialog):
             frame,
             text=tr(
                 "dialog.update.message",
-                version=self.info.version,
+                version=info.version,
                 current=__version__,
             ),
             wraplength=420,
@@ -140,7 +124,7 @@ class UpdateDialog(_ModalDialog):
 
         ttk.Label(
             frame,
-            text=self.info.download_url,
+            text=info.download_url,
             foreground="#1b6ec2",
             wraplength=420,
             justify=tk.LEFT,
@@ -156,9 +140,10 @@ class UpdateDialog(_ModalDialog):
             buttons, text=tr("dialog.update.later"), command=self.window.destroy
         ).pack(side=tk.RIGHT)
 
-    def _activate(self) -> None:
+        self.window.deiconify()
+        center_over_parent(window=self.window, parent=parent)
         self.window.bind("<Escape>", lambda event: self.window.destroy())
-        super()._activate()
+        self.window.grab_set()
         self.download_button.focus_set()
 
     def _download(self) -> None:
@@ -171,16 +156,16 @@ class UpdateDialog(_ModalDialog):
         self.window.destroy()
 
 
-class MessageDialog(_ModalDialog):
+class MessageDialog:
     """Modal message dialog centered over its parent window."""
 
-    _STYLES: ClassVar[dict[str, tuple[str, str]]] = {
+    _STYLES = {
         "error": ("✖", "#b3261e"),
         "warning": ("⚠", "#b36b00"),
-        "info": ("ℹ", "#1b6ec2"),  # noqa: RUF001 - intentional info glyph
+        "info": ("ℹ", "#1b6ec2"),
     }
 
-    def __init__(self, parent: Window, level: str, title: str, message: str):
+    def __init__(self, parent: tk.Wm, level: str, title: str, message: str):
         """Create the message dialog.
 
         Args:
@@ -189,13 +174,12 @@ class MessageDialog(_ModalDialog):
             title: Dialog title.
             message: Message text.
         """
-        self.level = level
-        self.message = message
-        super().__init__(parent, title)
+        self.window = tk.Toplevel(parent)
+        self.window.title(title)
+        self.window.resizable(False, False)
+        self.window.transient(parent)
 
-    def _create_content(self) -> None:
-        """Create the dialog content."""
-        icon_text, color = self._STYLES[self.level]
+        icon_text, color = self._STYLES[level]
         frame = ttk.Frame(self.window, padding="20")
         frame.pack(fill=tk.BOTH, expand=True)
 
@@ -204,7 +188,7 @@ class MessageDialog(_ModalDialog):
         tk.Label(body, text=icon_text, fg=color, font=ui_font(24)).pack(
             side=tk.LEFT, padx=(0, 12)
         )
-        ttk.Label(body, text=self.message, wraplength=360, justify=tk.LEFT).pack(
+        ttk.Label(body, text=message, wraplength=360, justify=tk.LEFT).pack(
             side=tk.LEFT
         )
 
@@ -213,7 +197,8 @@ class MessageDialog(_ModalDialog):
         )
         self.ok_button.pack(pady=(16, 0))
 
-    def _activate(self) -> None:
+        center_over_parent(window=self.window, parent=parent)
+
         self.window.bind("<Return>", lambda event: self.window.destroy())
         self.window.bind("<Escape>", lambda event: self.window.destroy())
         # center_over_parent already pumped events, so the dialog is normally
@@ -231,20 +216,20 @@ class MessageDialog(_ModalDialog):
             logger.debug("Dialog closed before it became interactive")
 
 
-class MessageDialogs:
+class ErrorDialog:
     """Helper class for showing message dialogs centered over the main window."""
 
     @staticmethod
-    def show_error(title: str, message: str, parent: Window) -> None:
+    def show_error(title: str, message: str, parent: tk.Wm) -> None:
         """Show an error message box."""
         MessageDialog(parent, "error", title, message)
 
     @staticmethod
-    def show_warning(title: str, message: str, parent: Window) -> None:
+    def show_warning(title: str, message: str, parent: tk.Wm) -> None:
         """Show a warning message box."""
         MessageDialog(parent, "warning", title, message)
 
     @staticmethod
-    def show_info(title: str, message: str, parent: Window) -> None:
+    def show_info(title: str, message: str, parent: tk.Wm) -> None:
         """Show an info message box."""
         MessageDialog(parent, "info", title, message)

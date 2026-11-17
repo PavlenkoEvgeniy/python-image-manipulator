@@ -1,30 +1,44 @@
 """Tests for interface language catalogs, lookup and detection."""
 
 import string
-from pathlib import Path
 
 from image_manipulator import i18n
 from image_manipulator.config import config
 
-EXPECTED_CODES = [language.code for language in i18n.LANGUAGES]
+EXPECTED_CODES = [
+    "en",
+    "ru",
+    "es",
+    "fr",
+    "de",
+    "pt_BR",
+    "it",
+    "zh_CN",
+    "ja",
+    "ko",
+    "tl",
+    "tr",
+    "nl",
+    "pl",
+    "uk",
+    "id",
+]
 
 
 def _placeholders(text: str) -> set:
     """Names of the ``{placeholder}`` fields used by a message."""
     return {
-        field for _, field, _, _ in string.Formatter().parse(text) if field is not None
+        field
+        for _, field, _, _ in string.Formatter().parse(text)
+        if field is not None
     }
 
 
 class TestLanguages:
     """The supported language set."""
 
-    def test_catalog_files_match_the_language_list(self):
-        catalog_codes = sorted(
-            path.stem for path in Path(i18n.CATALOG_DIR).glob("*.json")
-        )
-
-        assert sorted(EXPECTED_CODES) == catalog_codes
+    def test_every_supported_language_is_listed_in_order(self):
+        assert [language.code for language in i18n.LANGUAGES] == EXPECTED_CODES
 
     def test_native_names_are_unique(self):
         names = [language.native_name for language in i18n.LANGUAGES]
@@ -153,18 +167,3 @@ class TestDetection:
         assert i18n.match_locale("de-DE") == "de"
         assert i18n.match_locale("sr_RS@latin") is None
         assert i18n.match_locale("") is None
-
-    def test_match_locale_handles_script_and_region(self):
-        assert i18n.match_locale("zh-Hans-CN") == "zh_CN"
-        assert i18n.match_locale("zh_Hans_CN") == "zh_CN"
-        assert i18n.match_locale("zh-Hans-SG") == "zh_CN"
-        assert i18n.match_locale("zh-Hant-TW") is None
-
-    def test_match_locale_handles_windows_names(self):
-        assert i18n.match_locale("Russian_Russia.1251") == "ru"
-        assert i18n.match_locale("Chinese (Simplified)_China.936") == "zh_CN"
-        assert i18n.match_locale("Portuguese_Brazil.1252") == "pt_BR"
-        assert i18n.match_locale("English_United States.1252") == "en"
-
-    def test_match_locale_rejects_unsupported_windows_language(self):
-        assert i18n.match_locale("Chinese (Traditional)_Taiwan.950") is None

@@ -68,7 +68,6 @@
   "status.settings_reset": "Настройки сброшены к значениям по умолчанию",
   "status.processing": "Обработка…",
   "status.processing_item": "Обработка {index}/{total}: {name}",
-  "status.batch_failed": "Пакетная обработка прервалась: {error}",
   "status.done": "Готово: обработано {success} из {total}",
   "status.partial": "Обработано {success} из {total}; ошибок: {failed}",
   "dialog.ok": "ОК",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Сначала добавьте изображения.",
   "dialog.cannot_load.title": "Не удалось загрузить изображение",
   "dialog.cannot_load.message": "Не удалось загрузить {name}:\n{error}",
-  "dialog.close_running.title": "Идёт обработка",
-  "dialog.close_running.message": "Пакетная обработка ещё выполняется. Закрыть окно? Текущий файл может быть недописан, а остальные будут пропущены.",
   "dialog.reset.title": "Сброс настроек",
   "dialog.reset.message": "Вернуть все настройки к значениям по умолчанию?\n\nСохранённый файл настроек будет удалён.",
   "dialog.overwrite.title": "Перезапись оригиналов",
@@ -114,6 +111,5 @@
   "about.close": "Закрыть",
   "pipeline.not_found": "Файл не найден: {path}",
   "pipeline.unsupported_format": "Неподдерживаемый формат изображения: {suffix}",
-  "pipeline.multiframe_overwrite": "Нельзя перезаписать {name}: анимированные и многостраничные изображения не поддерживаются. Отключите перезапись, чтобы сохранить копию.",
   "pipeline.failed": "Не удалось обработать {name}: {error}"
 }

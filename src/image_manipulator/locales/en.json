@@ -68,7 +68,6 @@
   "status.settings_reset": "Settings reset to defaults",
   "status.processing": "Processing…",
   "status.processing_item": "Processing {index}/{total}: {name}",
-  "status.batch_failed": "Batch processing stopped early: {error}",
   "status.done": "Done: {success} of {total} processed",
   "status.partial": "Processed {success} of {total}; {failed} failed",
   "dialog.ok": "OK",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Please add image files first.",
   "dialog.cannot_load.title": "Cannot Load Image",
   "dialog.cannot_load.message": "Failed to load {name}:\n{error}",
-  "dialog.close_running.title": "Processing in progress",
-  "dialog.close_running.message": "A batch is still running. Close the window anyway? The current file may be incomplete and the remaining files will be skipped.",
   "dialog.reset.title": "Reset Settings",
   "dialog.reset.message": "Return all settings to their defaults?\n\nThe saved settings file will be removed.",
   "dialog.overwrite.title": "Overwrite Originals",
@@ -114,6 +111,5 @@
   "about.close": "Close",
   "pipeline.not_found": "Input file not found: {path}",
   "pipeline.unsupported_format": "Unsupported image format: {suffix}",
-  "pipeline.multiframe_overwrite": "Cannot overwrite {name}: animated or multi-page images are not supported. Turn off overwrite to save a copy.",
   "pipeline.failed": "Failed to process {name}: {error}"
 }

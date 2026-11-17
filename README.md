@@ -4,10 +4,10 @@
 
 # 🖼️ Image Manipulator
 
-An awesome program for photo processing — it lets you add dates to your photos.
-It can process a huge number of images at once and resize them simultaneously.
-You can even set it to rotate photos to a horizontal orientation before adding
-the date, making them look just like they came straight from a camera.
+Combines two tools — **Image Resizer Pro** and **Image Text Overlay** — into a
+single application. Batch-process images in one pass:
+
+**load → resize → add text → save**
 
 ## ✨ Features
 
@@ -23,7 +23,7 @@ the date, making them look just like they came straight from a camera.
 - 🧭 **Orientation** — EXIF rotation is baked into the pixels before resizing
 - 💽 **Settings persistence** — all settings are restored on the next launch
 - 📊 **Progress and errors** — processing runs in a background thread with a batch summary
-- 🌍 **Interface languages** — 16 languages, selectable with the **Language** button in the top toolbar
+- 🌍 **Interface languages** — 16 languages, selectable in File → Language
 - 🔄 **Update check** — optional check for a newer release at every launch, with a direct download for your OS
 
 ## 🖼️ Screenshot
@@ -68,7 +68,7 @@ folder, the home directory is used.
 The interface is available in English, Russian, Spanish, French, German,
 Portuguese (Brazil), Italian, Chinese (Simplified), Japanese, Korean, Tagalog
 (Filipino), Turkish, Dutch, Polish, Ukrainian, and Indonesian.
-Choose a language with the **Language** button in the top toolbar; it applies after the application
+Choose a language under **File → Language**; it applies after the application
 is restarted. On the first launch the language is taken from the OS locale and
 falls back to English.
 
@@ -122,14 +122,7 @@ source .venv/bin/activate  # Linux/macOS
 pip install -e ".[dev,dnd,multimonitor]"
 ```
 
-Or, with [uv](https://docs.astral.sh/uv/):
-
-```bash
-uv sync --locked --extra dev --extra dnd --extra multimonitor
-uv run python main.py
-```
-
-Python 3.11 or newer is required. Minimum dependency: `Pillow>=10`.
+Minimum dependency: `Pillow>=10`.
 Optional: `tkinterdnd2` (drag & drop) and `screeninfo` (centering the window on
 the monitor under the pointer).
 
@@ -154,7 +147,7 @@ image-manipulator
 4. In the **Output** section, choose the folder, format, and overwrite behavior.
 5. Click **Process All** to process and save every image.
 
-Settings are saved automatically. The **Reset Settings** toolbar button restores the defaults
+Settings are saved automatically. `File → Reset Settings` restores the defaults
 and deletes the settings file.
 
 ## 📁 Supported Formats
@@ -166,24 +159,15 @@ and deletes the settings file.
 
 ```
 src/image_manipulator/
-├── app.py                # application bootstrap and root window
-├── config.py             # constants and default values
-├── formats.py            # image format capabilities and suffixes
-├── resize.py             # dimension calculation and resampling (Pillow)
-├── text_overlay.py       # font selection, styles, and text drawing
-├── pipeline.py           # load → resize → text → save
-├── settings_store.py     # versioned JSON settings
-├── settings_snapshot.py  # typed settings shared by load/save/reset
-├── debounce.py           # Tk after() debouncer
-├── ui_events.py          # typed worker events
-├── positioning.py        # centering the window and dialogs
-├── dialogs.py            # About and modal messages
-├── i18n.py               # language catalogs and translation helpers
-├── uifonts.py            # UI font family selection
-├── update_checker.py     # optional GitHub release check
-├── icon.py               # bundled icon loading
-├── logging_config.py     # logging setup
-└── ui.py                 # Tkinter main window
+├── app.py             # application bootstrap and root window
+├── config.py          # constants and default values
+├── resize.py          # dimension calculation and resampling (Pillow)
+├── text_overlay.py    # font selection, styles, and text drawing
+├── pipeline.py        # load → resize → text → save
+├── settings_store.py  # versioned JSON settings
+├── positioning.py     # centering the window and dialogs
+├── dialogs.py         # About and modal messages
+└── ui.py              # Tkinter main window
 ```
 
 Processing logic is independent of Tkinter: `resize.py`, `text_overlay.py`, and
@@ -239,7 +223,7 @@ default while the remaining settings load as-is.
 
 ## ℹ️ About
 
-- **Version:** [latest release](https://github.com/PavlenkoEvgeniy/python-image-manipulator/releases/latest)
+- **Version:** 1.8.0
 - **License:** MIT
 - **Author:** Pavlenko Evgeniy
 - **Email:** [pavlenkoevgeniy85@gmail.com](mailto:pavlenkoevgeniy85@gmail.com)

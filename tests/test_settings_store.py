@@ -45,14 +45,6 @@ class TestRoundTrip:
         assert settings_store.save_settings(settings, path=path)
         assert settings_store.load_settings(path=path) == settings
 
-    def test_bare_filename_target(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        settings = _full_settings()
-
-        assert settings_store.save_settings(settings, path="settings.json")
-        assert (tmp_path / "settings.json").is_file()
-        assert settings_store.load_settings(path="settings.json") == settings
-
     def test_file_is_versioned_json(self, tmp_path):
         path = tmp_path / "settings.json"
         settings_store.save_settings(_full_settings(), path=str(path))
@@ -97,7 +89,10 @@ class TestValidation:
         assert result["height"] == config.min_dimension
         assert result["maintain_aspect"] is config.default_maintain_aspect_ratio
         assert result["add_dimensions"] is config.default_add_dimensions_to_filename
-        assert result["rotate_portrait"] is config.default_rotate_portrait_to_landscape
+        assert (
+            result["rotate_portrait"]
+            is config.default_rotate_portrait_to_landscape
+        )
         assert result["output_format"] == config.default_output_format
         assert result["jpeg_quality"] == config.min_jpeg_quality
         assert result["text"] == config.default_text
@@ -113,7 +108,9 @@ class TestValidation:
         assert result["overwrite"] is False
 
     def test_missing_language_uses_the_os_locale(self, monkeypatch):
-        monkeypatch.setattr(settings_store, "detect_system_language", lambda: "ru")
+        monkeypatch.setattr(
+            settings_store, "detect_system_language", lambda: "ru"
+        )
 
         assert settings_store.validate_settings({})["language"] == "ru"
 

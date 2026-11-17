@@ -68,7 +68,6 @@
   "status.settings_reset": "Налаштування скинуто до типових",
   "status.processing": "Обробка…",
   "status.processing_item": "Обробка {index}/{total}: {name}",
-  "status.batch_failed": "Пакетна обробка перервалася: {error}",
   "status.done": "Готово: оброблено {success} з {total}",
   "status.partial": "Оброблено {success} з {total}; невдалих: {failed}",
   "dialog.ok": "Гаразд",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Спочатку додайте файли зображень.",
   "dialog.cannot_load.title": "Не вдалося завантажити зображення",
   "dialog.cannot_load.message": "Не вдалося завантажити {name}:\n{error}",
-  "dialog.close_running.title": "Триває обробка",
-  "dialog.close_running.message": "Пакетна обробка ще виконується. Закрити вікно? Поточний файл може бути неповним, а решту буде пропущено.",
   "dialog.reset.title": "Скинути налаштування",
   "dialog.reset.message": "Повернути всі налаштування до типових?\n\nЗбережений файл налаштувань буде видалено.",
   "dialog.overwrite.title": "Перезапис оригіналів",
@@ -114,6 +111,5 @@
   "about.close": "Закрити",
   "pipeline.not_found": "Вхідний файл не знайдено: {path}",
   "pipeline.unsupported_format": "Непідтримуваний формат зображення: {suffix}",
-  "pipeline.multiframe_overwrite": "Не вдається перезаписати {name}: анімовані та багатосторінкові зображення не підтримуються. Вимкніть перезапис, щоб зберегти копію.",
   "pipeline.failed": "Не вдалося обробити {name}: {error}"
 }

@@ -68,7 +68,6 @@
   "status.settings_reset": "Pengaturan dikembalikan ke bawaan",
   "status.processing": "Memproses…",
   "status.processing_item": "Memproses {index}/{total}: {name}",
-  "status.batch_failed": "Pemrosesan batch berhenti lebih awal: {error}",
   "status.done": "Selesai: {success} dari {total} diproses",
   "status.partial": "Diproses {success} dari {total}; {failed} gagal",
   "dialog.ok": "OK",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Silakan tambahkan berkas gambar terlebih dahulu.",
   "dialog.cannot_load.title": "Tidak Dapat Memuat Gambar",
   "dialog.cannot_load.message": "Gagal memuat {name}:\n{error}",
-  "dialog.close_running.title": "Pemrosesan berlangsung",
-  "dialog.close_running.message": "Batch masih berjalan. Tetap tutup jendela? File saat ini mungkin tidak lengkap dan sisanya akan dilewati.",
   "dialog.reset.title": "Atur Ulang Pengaturan",
   "dialog.reset.message": "Kembalikan semua pengaturan ke nilai bawaan?\n\nBerkas pengaturan yang tersimpan akan dihapus.",
   "dialog.overwrite.title": "Timpa Berkas Asli",
@@ -114,6 +111,5 @@
   "about.close": "Tutup",
   "pipeline.not_found": "Berkas masukan tidak ditemukan: {path}",
   "pipeline.unsupported_format": "Format gambar tidak didukung: {suffix}",
-  "pipeline.multiframe_overwrite": "Tidak dapat menimpa {name}: gambar animasi atau multi-halaman tidak didukung. Nonaktifkan timpa untuk menyimpan salinan.",
   "pipeline.failed": "Gagal memproses {name}: {error}"
 }

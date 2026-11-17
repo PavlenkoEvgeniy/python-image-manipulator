@@ -68,7 +68,6 @@
   "status.settings_reset": "Na-reset ang mga setting sa default",
   "status.processing": "Pinoproseso…",
   "status.processing_item": "Pinoproseso {index}/{total}: {name}",
-  "status.batch_failed": "Huminto nang maaga ang batch processing: {error}",
   "status.done": "Tapos: {success} sa {total} ang naproseso",
   "status.partial": "Naproseso ang {success} sa {total}; {failed} ang nabigo",
   "dialog.ok": "OK",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Magdagdag muna ng mga file ng larawan.",
   "dialog.cannot_load.title": "Hindi Ma-load ang Larawan",
   "dialog.cannot_load.message": "Nabigong i-load ang {name}:\n{error}",
-  "dialog.close_running.title": "Kasalukuyang nagpoproseso",
-  "dialog.close_running.message": "Tumatakbo pa ang batch. Isara pa rin ang window? Maaaring hindi kumpleto ang kasalukuyang file at lalaktawan ang iba.",
   "dialog.reset.title": "I-reset ang mga Setting",
   "dialog.reset.message": "Ibalik ang lahat ng setting sa default?\n\nBuburahin ang naka-save na file ng setting.",
   "dialog.overwrite.title": "I-overwrite ang mga Orihinal",
@@ -114,6 +111,5 @@
   "about.close": "Isara",
   "pipeline.not_found": "Hindi mahanap ang input file: {path}",
   "pipeline.unsupported_format": "Hindi suportadong format ng larawan: {suffix}",
-  "pipeline.multiframe_overwrite": "Hindi ma-overwrite ang {name}: hindi sinusuportahan ang animated o multi-page na mga larawan. I-off ang overwrite para mag-save ng kopya.",
   "pipeline.failed": "Nabigong iproseso ang {name}: {error}"
 }

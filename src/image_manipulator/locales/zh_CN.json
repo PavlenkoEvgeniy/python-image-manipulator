@@ -68,7 +68,6 @@
   "status.settings_reset": "设置已重置为默认值",
   "status.processing": "正在处理…",
   "status.processing_item": "正在处理 {index}/{total}：{name}",
-  "status.batch_failed": "批处理提前停止：{error}",
   "status.done": "完成：已处理 {success}/{total}",
   "status.partial": "已处理 {success}/{total}；失败 {failed}",
   "dialog.ok": "确定",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "请先添加图片文件。",
   "dialog.cannot_load.title": "无法加载图片",
   "dialog.cannot_load.message": "无法加载 {name}：\n{error}",
-  "dialog.close_running.title": "正在处理",
-  "dialog.close_running.message": "批处理仍在运行。仍要关闭窗口吗？当前文件可能不完整，其余文件将被跳过。",
   "dialog.reset.title": "重置设置",
   "dialog.reset.message": "将所有设置恢复为默认值？\n\n已保存的设置文件将被删除。",
   "dialog.overwrite.title": "覆盖原始文件",
@@ -114,6 +111,5 @@
   "about.close": "关闭",
   "pipeline.not_found": "找不到输入文件：{path}",
   "pipeline.unsupported_format": "不支持的图片格式：{suffix}",
-  "pipeline.multiframe_overwrite": "无法覆盖 {name}：不支持动画或多页图像。请关闭覆盖以保存副本。",
   "pipeline.failed": "处理 {name} 失败：{error}"
 }

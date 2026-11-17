@@ -1,22 +1,33 @@
 """Processing pipeline: load → resize → text overlay → save."""
 
-import contextlib
 import logging
-import os
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Optional, Tuple
 
 from PIL import Image, ImageOps
 
 from .config import config
-from .formats import format_for_name, format_for_suffix
 from .i18n import tr
 from .resize import OutputFormat, resize_image
 from .text_overlay import TextOverlay
 
 logger = logging.getLogger(__name__)
+
+# Pillow output formats keyed by file suffix, used when overwriting originals.
+_FORMAT_BY_SUFFIX = {
+    ".jpg": "JPEG",
+    ".jpeg": "JPEG",
+    ".png": "PNG",
+    ".webp": "WEBP",
+    ".bmp": "BMP",
+    ".tif": "TIFF",
+    ".tiff": "TIFF",
+    ".gif": "GIF",
+}
+
+# Formats that can carry an ICC profile in Pillow.
+_ICC_FORMATS = {"JPEG", "PNG", "WEBP", "TIFF"}
 
 
 @dataclass
@@ -24,68 +35,26 @@ class ProcessResult:
     """Result of processing a single image."""
 
     success: bool
-    output_path: Path | None = None
-    error: str | None = None
-
-
-def _normalize_high_depth(image: Image.Image) -> Image.Image:
-    """Scale 16-bit integer and float images down to 8 bits.
-
-    A plain ``convert("RGB")`` clips everything above 255 to white, which
-    destroys the midtones of 16-bit grayscale scans.
-    """
-    mode = image.mode
-    if mode == "F":
-        low, high = cast(tuple[float, float], image.getextrema())
-        if low >= 0.0 and high <= 1.0:
-            scaled = image.point(lambda value: value * 255.0)
-        elif high > low:
-            scale = 255.0 / (high - low)
-            scaled = image.point(lambda value: (value - low) * scale)
-        else:
-            scaled = image.point(lambda value: 0.0)
-        return scaled.convert("L").convert("RGB")
-
-    if mode in ("I;16", "I;16B", "I;16L", "I;16N"):
-        return (
-            image.convert("I")
-            .point(lambda value: value * (255.0 / 65535.0))
-            .convert("L")
-            .convert("RGB")
-        )
-
-    low, high = cast(tuple[float, float], image.getextrema())
-    if high <= low:
-        return image.convert("L").convert("RGB")
-    scale = 255.0 / (high - low)
-    return image.point(lambda value: (value - low) * scale).convert("L").convert("RGB")
+    output_path: Optional[Path] = None
+    error: Optional[str] = None
 
 
 def _normalize_mode(image: Image.Image) -> Image.Image:
     """Convert exotic color modes to RGB or RGBA.
 
-    Palette, grayscale-with-alpha, CMYK, high-bit-depth and float images
-    either cannot be resized with Lanczos or cannot be drawn on with a hex
-    color, so they are normalized before processing.
+    Palette, grayscale-with-alpha, CMYK and 16-bit images either cannot be
+    resized with Lanczos or cannot be drawn on with a hex color, so they are
+    normalized before processing.
     """
     if image.mode in ("RGB", "RGBA"):
         return image
-    if image.mode in (
-        "I",
-        "F",
-        "I;16",
-        "I;16B",
-        "I;16L",
-        "I;16N",
-    ):
-        return _normalize_high_depth(image)
     has_alpha = image.mode in ("PA", "LA") or "transparency" in image.info
     if has_alpha:
         return image.convert("RGBA")
     return image.convert("RGB")
 
 
-def load_image(path: str | Path) -> tuple[Image.Image, bytes | None]:
+def load_image(path) -> Tuple[Image.Image, Optional[bytes]]:
     """Load an image with its display orientation baked into the pixels.
 
     Viewers display an image according to its EXIF Orientation tag, which may
@@ -113,28 +82,6 @@ def load_image(path: str | Path) -> tuple[Image.Image, bytes | None]:
     return image, icc_profile
 
 
-def _has_multiple_frames(path: Path) -> bool:
-    """Whether a file contains animation or more than one page."""
-    with Image.open(path) as image:
-        return getattr(image, "n_frames", 1) > 1
-
-
-def _to_gif_palette(image: Image.Image) -> Image.Image:
-    """Convert to a P image while preserving a single transparent index."""
-    rgba = image.convert("RGBA")
-    alpha = rgba.getchannel("A")
-    palette = rgba.convert("RGB").quantize(colors=255, method=Image.Quantize.MEDIANCUT)
-    colors = palette.getpalette() or []
-    if len(colors) < 768:
-        colors.extend([0] * (768 - len(colors)))
-        palette.putpalette(colors)
-    if cast(tuple[int, int], alpha.getextrema())[0] < 255:
-        transparent = alpha.point(lambda value: 255 if value == 0 else 0)
-        palette.paste(255, mask=transparent)
-        palette.info["transparency"] = 255
-    return palette
-
-
 def _flatten_to_rgb(image: Image.Image) -> Image.Image:
     """Flatten transparency onto a white background for JPEG/BMP output."""
     if image.mode == "RGB":
@@ -149,20 +96,19 @@ def _flatten_to_rgb(image: Image.Image) -> Image.Image:
 
 def _prepare_for_save(image: Image.Image, pil_format: str) -> Image.Image:
     """Convert the image mode to one the target format supports."""
-    image_format = format_for_name(pil_format)
-    if image_format is not None and not image_format.supports_alpha:
+    if pil_format in ("JPEG", "BMP"):
         return _flatten_to_rgb(image)
     if pil_format == "GIF" and image.mode != "P":
-        return _to_gif_palette(image)
+        return image.convert("RGB").convert("P", palette=Image.Palette.ADAPTIVE)
     return image
 
 
 def save_image(
     image: Image.Image,
-    path: str | Path,
+    path,
     pil_format: str,
     jpeg_quality: int = 95,
-    icc_profile: bytes | None = None,
+    icc_profile: Optional[bytes] = None,
 ) -> None:
     """Save an image in the given Pillow format with format-aware options.
 
@@ -175,41 +121,20 @@ def save_image(
     """
     prepared = _prepare_for_save(image, pil_format)
 
-    image_format = format_for_name(pil_format)
-    kwargs: dict[str, Any] = {}
-    if image_format is not None and image_format.is_lossy:
+    kwargs = {}
+    if pil_format == "JPEG":
         kwargs["quality"] = jpeg_quality
-    if pil_format in ("JPEG", "PNG"):
         kwargs["optimize"] = True
-    if icc_profile and image_format is not None and image_format.supports_icc:
+    elif pil_format == "PNG":
+        kwargs["optimize"] = True
+    elif pil_format == "WEBP":
+        kwargs["quality"] = jpeg_quality
+    if icc_profile and pil_format in _ICC_FORMATS:
         kwargs["icc_profile"] = icc_profile
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Encode into a sibling temporary file and replace the destination only
-    # after the encoder has finished. Pillow truncates its target as soon as
-    # it opens it, so writing directly would destroy an original being
-    # overwritten if encoding fails or the process is killed.
-    destination = path.resolve()
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    existing_mode = destination.stat().st_mode if destination.exists() else None
-    fd, temp_name = tempfile.mkstemp(
-        prefix=f".{destination.stem}-", suffix=".tmp", dir=destination.parent
-    )
-    os.close(fd)
-    temp_path = Path(temp_name)
-    try:
-        prepared.save(temp_path, format=pil_format, **kwargs)
-        if existing_mode is not None:
-            os.chmod(temp_path, existing_mode & 0o7777)
-        else:
-            os.chmod(temp_path, 0o644)
-        os.replace(temp_path, destination)
-    except BaseException:
-        with contextlib.suppress(OSError):
-            temp_path.unlink()
-        raise
+    prepared.save(path, format=pil_format, **kwargs)
 
 
 class ImageManipulator:
@@ -230,7 +155,7 @@ class ImageManipulator:
         output_format: OutputFormat = OutputFormat.JPEG,
         jpeg_quality: int = config.default_jpeg_quality,
         add_dimensions_to_filename: bool = config.default_add_dimensions_to_filename,
-        text_overlay: TextOverlay | None = None,
+        text_overlay: Optional[TextOverlay] = None,
     ):
         self.target_width = target_width
         self.target_height = target_height
@@ -267,9 +192,8 @@ class ImageManipulator:
             self.target_height,
             self.maintain_aspect,
         )
-        overlay = self.text_overlay
-        if overlay is not None and self.has_text():
-            overlaid = overlay.apply_text(result)
+        if self.has_text():
+            overlaid = self.text_overlay.apply_text(result)
             if overlaid is not None:
                 result = overlaid
         return result
@@ -277,10 +201,10 @@ class ImageManipulator:
     def resolve_output_path(
         self,
         input_path: Path,
-        output_dir: str | Path,
+        output_dir,
         rendered: Image.Image,
         overwrite: bool,
-    ) -> tuple[Path, str]:
+    ) -> Tuple[Path, str]:
         """Choose the destination path and Pillow format for a result.
 
         Args:
@@ -293,9 +217,9 @@ class ImageManipulator:
             Tuple of (output path, Pillow format name).
         """
         if overwrite:
-            image_format = format_for_suffix(input_path.suffix)
-            if image_format is not None:
-                return input_path, image_format.pillow_name
+            pil_format = _FORMAT_BY_SUFFIX.get(input_path.suffix.lower())
+            if pil_format is not None:
+                return input_path, pil_format
             logger.warning(
                 f"Cannot overwrite {input_path.name}: unsupported output suffix. "
                 "Saving to the output folder instead."
@@ -324,8 +248,8 @@ class ImageManipulator:
 
     def process_path(
         self,
-        input_path: str | Path,
-        output_dir: str | Path,
+        input_path,
+        output_dir,
         overwrite: bool = False,
     ) -> ProcessResult:
         """Load, resize, overlay text and save one image.
@@ -350,12 +274,8 @@ class ImageManipulator:
                     suffix=path.suffix or path.name,
                 ),
             )
+
         try:
-            if overwrite and _has_multiple_frames(path):
-                return ProcessResult(
-                    False,
-                    error=tr("pipeline.multiframe_overwrite", name=path.name),
-                )
             image, icc_profile = load_image(path)
             rendered = self.render(image)
             output_path, pil_format = self.resolve_output_path(

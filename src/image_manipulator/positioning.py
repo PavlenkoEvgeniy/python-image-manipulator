@@ -1,8 +1,7 @@
 """Window positioning helpers shared by the main window and dialogs."""
 
 import tkinter as tk
-
-Window = tk.Tk | tk.Toplevel
+from typing import Optional
 
 
 def centered_origin(
@@ -16,7 +15,7 @@ def centered_origin(
 
 def choose_monitor(
     monitors: list[tuple[int, int, int, int]], pointer: tuple[int, int]
-) -> tuple[int, int, int, int] | None:
+) -> Optional[tuple[int, int, int, int]]:
     """Pick the monitor rectangle that contains the given point."""
     px, py = pointer
     for x, y, width, height in monitors:
@@ -41,10 +40,10 @@ def detect_monitors() -> list[tuple[int, int, int, int]]:
 
 
 def center_on_screen(
-    window: Window,
+    window: tk.Wm,
     width: int,
     height: int,
-    monitors: list[tuple[int, int, int, int]] | None = None,
+    monitors: Optional[list[tuple[int, int, int, int]]] = None,
 ) -> None:
     """Position and size a window centered inside the monitor with the pointer.
 
@@ -70,18 +69,15 @@ def center_on_screen(
         y = max(0, y)
 
     window.geometry(f"{width}x{height}+{x}+{y}")
-    # Do not pump the event loop here: this runs while the main window is
-    # still being constructed, and a full idle pass can take noticeable time
-    # on slow displays. The geometry above is already what the WM receives;
-    # client-frame correction is only needed for dialogs.
+    _align_client(window, x, y, width, height)
 
 
 def center_over_parent(
     *,
-    window: Window,
-    parent: Window,
-    width: int | None = None,
-    height: int | None = None,
+    window: tk.Wm,
+    parent: tk.Wm,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
 ) -> None:
     """Position a window centered over its parent window.
 
@@ -98,19 +94,13 @@ def center_over_parent(
     _align_client(window, x, y, w, h)
 
 
-def _align_client(window: Window, x: int, y: int, width: int, height: int) -> None:
-    """Correct for window managers that position the frame, not the client.
-
-    Only idle work is pumped here. A full ``update()`` ran the entire event
-    loop while the window was still being built, which made startup and
-    dialog placement noticeably slow and could re-enter application
-    callbacks.
-    """
-    window.update_idletasks()
+def _align_client(window: tk.Wm, x: int, y: int, width: int, height: int) -> None:
+    """Correct for window managers that position the frame, not the client."""
+    window.update()
     if not window.winfo_ismapped():
         return
     error_x = x - window.winfo_rootx()
     error_y = y - window.winfo_rooty()
     if error_x or error_y:
         window.geometry(f"{width}x{height}+{x + error_x}+{y + error_y}")
-        window.update_idletasks()
+        window.update()

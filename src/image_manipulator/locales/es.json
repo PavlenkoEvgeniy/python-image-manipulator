@@ -68,7 +68,6 @@
   "status.settings_reset": "Ajustes restablecidos a los valores predeterminados",
   "status.processing": "Procesando…",
   "status.processing_item": "Procesando {index}/{total}: {name}",
-  "status.batch_failed": "El procesamiento por lotes se detuvo antes de tiempo: {error}",
   "status.done": "Hecho: procesadas {success} de {total}",
   "status.partial": "Procesadas {success} de {total}; errores: {failed}",
   "dialog.ok": "Aceptar",
@@ -92,8 +91,6 @@
   "dialog.no_images_for_processing.message": "Añade primero archivos de imagen.",
   "dialog.cannot_load.title": "No se puede cargar la imagen",
   "dialog.cannot_load.message": "No se pudo cargar {name}:\n{error}",
-  "dialog.close_running.title": "Procesamiento en curso",
-  "dialog.close_running.message": "El lote aún se está ejecutando. ¿Cerrar la ventana de todos modos? El archivo actual puede quedar incompleto y se omitirán los demás.",
   "dialog.reset.title": "Restablecer ajustes",
   "dialog.reset.message": "¿Restablecer todos los ajustes a sus valores predeterminados?\n\nSe eliminará el archivo de ajustes guardado.",
   "dialog.overwrite.title": "Sobrescribir originales",
@@ -114,6 +111,5 @@
   "about.close": "Cerrar",
   "pipeline.not_found": "Archivo de entrada no encontrado: {path}",
   "pipeline.unsupported_format": "Formato de imagen no compatible: {suffix}",
-  "pipeline.multiframe_overwrite": "No se puede sobrescribir {name}: no se admiten imágenes animadas ni de varias páginas. Desactive la sobrescritura para guardar una copia.",
   "pipeline.failed": "No se pudo procesar {name}: {error}"
 }
