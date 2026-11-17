@@ -103,7 +103,7 @@ def test_message_dialog_survives_a_window_deleted_while_waiting(root, monkeypatc
     monkeypatch.setattr(tk.Misc, "winfo_ismapped", lambda self: False)
     monkeypatch.setattr(tk.Misc, "wait_visibility", raise_deleted)
 
-    dialogs.ErrorDialog.show_info("Finished", "All done", parent=root)
+    dialogs.MessageDialogs.show_info("Finished", "All done", parent=root)
 
 
 def test_about_icon_failure_is_logged(root, monkeypatch, caplog):

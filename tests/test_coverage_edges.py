@@ -535,7 +535,7 @@ class TestUiEdges:
     def test_processing_complete_reports_success(self, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            ui.ErrorDialog,
+            ui.MessageDialogs,
             "show_info",
             staticmethod(lambda *args, **kwargs: calls.append(args)),
         )
@@ -556,7 +556,7 @@ class TestUiEdges:
     def test_processing_complete_reports_errors(self, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            ui.ErrorDialog,
+            ui.MessageDialogs,
             "show_warning",
             staticmethod(lambda *args, **kwargs: calls.append(args)),
         )
@@ -576,12 +576,12 @@ class TestUiEdges:
         warnings = []
         infos = []
         monkeypatch.setattr(
-            ui.ErrorDialog,
+            ui.MessageDialogs,
             "show_warning",
             staticmethod(lambda *args, **kwargs: warnings.append(args)),
         )
         monkeypatch.setattr(
-            ui.ErrorDialog,
+            ui.MessageDialogs,
             "show_info",
             staticmethod(lambda *args, **kwargs: infos.append(args)),
         )

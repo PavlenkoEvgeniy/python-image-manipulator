@@ -99,7 +99,7 @@ def test_reset_does_not_resave_and_announces_restart(app, monkeypatch):
     monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **_: True)
     monkeypatch.setattr(ui, "detect_system_language", lambda: "en")
     monkeypatch.setattr(
-        ui.ErrorDialog,
+        ui.MessageDialogs,
         "show_info",
         staticmethod(lambda *a, **_: notices.append(a)),
     )

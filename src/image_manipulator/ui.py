@@ -14,7 +14,7 @@ from PIL import Image, ImageTk
 from . import __version__
 from .config import config, get_app_dir
 from .debounce import Debouncer
-from .dialogs import AboutDialog, ErrorDialog, UpdateDialog
+from .dialogs import AboutDialog, MessageDialogs, UpdateDialog
 from .i18n import (
     LANGUAGES,
     canonical_enum,
@@ -230,7 +230,7 @@ class ManipulatorApp:
     def _on_language_selected(self) -> None:
         """Save the chosen language; it applies after the next restart."""
         self._schedule_settings_save()
-        ErrorDialog.show_info(
+        MessageDialogs.show_info(
             tr("menu.file.language.restart_title"),
             tr("menu.file.language.restart_message"),
             parent=self.root,
@@ -758,7 +758,7 @@ class ManipulatorApp:
             added += 1
 
         if not added:
-            ErrorDialog.show_warning(
+            MessageDialogs.show_warning(
                 tr("dialog.no_images.title"),
                 tr("dialog.no_images.message"),
                 parent=self.root,
@@ -804,7 +804,7 @@ class ManipulatorApp:
             self.original_image, _ = load_image(path)
         except Exception as e:
             logger.error(f"Failed to load {path}: {e}")
-            ErrorDialog.show_error(
+            MessageDialogs.show_error(
                 tr("dialog.cannot_load.title"),
                 tr(
                     "dialog.cannot_load.message",
@@ -974,7 +974,7 @@ class ManipulatorApp:
             self._resetting = False
         self.status_var.set(tr("status.settings_reset"))
         if self.language_var.get() != previous_language:
-            ErrorDialog.show_info(
+            MessageDialogs.show_info(
                 tr("menu.file.language.restart_title"),
                 tr("menu.file.language.restart_message"),
                 parent=self.root,
@@ -1048,7 +1048,7 @@ class ManipulatorApp:
         if self._processing:
             return
         if not self.image_paths:
-            ErrorDialog.show_warning(
+            MessageDialogs.show_warning(
                 tr("dialog.no_images.title"),
                 tr("dialog.no_images_for_processing.message"),
                 parent=self.root,
@@ -1181,7 +1181,7 @@ class ManipulatorApp:
         if not errors:
             self.status_var.set(tr("status.done", success=success, total=total))
             destination = tr("dialog.complete.originals") if overwrite else output_dir
-            ErrorDialog.show_info(
+            MessageDialogs.show_info(
                 tr("dialog.complete.title"),
                 tr(
                     "dialog.complete.message",
@@ -1203,7 +1203,7 @@ class ManipulatorApp:
         summary = "\n".join(errors[:3])
         if len(errors) > 3:
             summary += "\n" + tr("dialog.errors.more", count=len(errors) - 3)
-        ErrorDialog.show_warning(
+        MessageDialogs.show_warning(
             tr("dialog.errors.title"),
             tr(
                 "dialog.errors.message",
@@ -1351,7 +1351,7 @@ class ManipulatorApp:
 
         if error:
             if manual:
-                ErrorDialog.show_warning(
+                MessageDialogs.show_warning(
                     tr("dialog.update_failed.title"),
                     tr("dialog.update_failed.message", error=error),
                     parent=self.root,
@@ -1361,7 +1361,7 @@ class ManipulatorApp:
         if info is not None:
             UpdateDialog(self.root, info)
         elif manual:
-            ErrorDialog.show_info(
+            MessageDialogs.show_info(
                 tr("dialog.update_latest.title"),
                 tr("dialog.update_latest.message", version=__version__),
                 parent=self.root,
