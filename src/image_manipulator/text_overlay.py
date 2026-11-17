@@ -344,7 +344,7 @@ class TextOverlay:
             )
         else:
             draw.text(
-                (x, y),
+                (x - offset_x, y - offset_y),
                 self.text,
                 fill=self.color,
                 font=font,

@@ -1,5 +1,6 @@
 """Tests for the text overlay logic."""
 
+import pytest
 from PIL import Image, ImageDraw
 
 from image_manipulator.config import config
@@ -55,6 +56,49 @@ class TestApplyText:
         assert result is not None
         assert result.size == (200, 100)
         assert result.tobytes() != _sample_image().tobytes()
+
+    @pytest.mark.parametrize(
+        "position", ["top left", "top right", "bottom left", "bottom right", "center"]
+    )
+    def test_text_is_visible_at_every_position(self, position):
+        overlay = TextOverlay(
+            text="Wgj",
+            color="#FFFFFF",
+            font_size=30,
+            position=position,
+            offset_up=5,
+            offset_left=5,
+        )
+
+        result = overlay.apply_text(Image.new("RGB", (300, 120), "black"))
+
+        assert result is not None
+        light = sum(
+            count
+            for count, (red, green, blue) in result.getcolors(maxcolors=300 * 120)
+            if red > 200 and green > 200 and blue > 200
+        )
+        assert light > 0
+
+    def test_dots_at_bottom_right_land_inside_the_image(self):
+        overlay = TextOverlay(
+            text="....",
+            color="#FFFFFF",
+            font_size=40,
+            position="bottom right",
+            offset_up=20,
+            offset_left=20,
+        )
+
+        result = overlay.apply_text(Image.new("RGB", (300, 120), "black"))
+
+        assert result is not None
+        light = sum(
+            count
+            for count, (red, green, blue) in result.getcolors(maxcolors=300 * 120)
+            if red > 200 and green > 200 and blue > 200
+        )
+        assert light > 0
 
     def test_hex_color_is_used(self):
         overlay = TextOverlay(
