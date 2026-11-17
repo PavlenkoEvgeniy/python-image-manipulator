@@ -223,17 +223,6 @@ class ManipulatorApp:
 
     def _create_widgets(self) -> None:
         """Create all UI widgets."""
-        title_font = tkfont.nametofont("TkHeadingFont").copy()
-        title_font.configure(size=16, weight="bold")
-        header = tk.Label(
-            self.root,
-            text=f"{config.name} v{config.version}",
-            anchor="center",
-            justify="center",
-            font=title_font,
-        )
-        header.pack(fill=tk.X, pady=(8, 0))
-
         main = ttk.Frame(self.root, padding=10)
         main.pack(fill=tk.BOTH, expand=True)
         main.columnconfigure(1, weight=1)
