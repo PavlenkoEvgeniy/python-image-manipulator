@@ -1016,9 +1016,15 @@ class ManipulatorApp:
         self.font_family_combo["values"] = self._system_font_families()
 
     def browse_output_dir(self) -> None:
-        """Pick the output folder."""
+        """Pick the output folder, starting in the current destination."""
+        current = self.output_dir_var.get().strip()
+        initial = (
+            current
+            if current and os.path.isdir(current)
+            else self._default_output_dir()
+        )
         folder = filedialog.askdirectory(
-            title=tr("dialog.select_output_folder"), initialdir=self.app_dir
+            title=tr("dialog.select_output_folder"), initialdir=initial
         )
         if folder:
             self.output_dir_var.set(folder)

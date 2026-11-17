@@ -52,6 +52,36 @@ def test_snapshot_stores_canonical_enum_tokens(app):
     assert snapshot["language"] == "ru"
 
 
+def test_browse_output_starts_in_the_current_folder(app, monkeypatch, tmp_path):
+    application, _ = app
+    application.output_dir_var.set(str(tmp_path))
+    calls = []
+    monkeypatch.setattr(
+        ui.filedialog,
+        "askdirectory",
+        lambda **kwargs: calls.append(kwargs) or "",
+    )
+
+    application.browse_output_dir()
+
+    assert calls[0]["initialdir"] == str(tmp_path)
+
+
+def test_browse_output_falls_back_to_the_default_folder(app, monkeypatch):
+    application, _ = app
+    application.output_dir_var.set("/path/that/does/not/exist")
+    calls = []
+    monkeypatch.setattr(
+        ui.filedialog,
+        "askdirectory",
+        lambda **kwargs: calls.append(kwargs) or "",
+    )
+
+    application.browse_output_dir()
+
+    assert calls[0]["initialdir"] == application._default_output_dir()
+
+
 def _pump(root, seconds=0.5):
     deadline = time.time() + seconds
     while time.time() < deadline:
