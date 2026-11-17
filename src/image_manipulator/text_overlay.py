@@ -36,6 +36,8 @@ _ALLOWED_FONT_SUFFIXES = {
     "heavy",
     "medium",
     "thin",
+    "condensed",
+    "narrow",
 }
 _FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
 _PLATFORM_FONT_FILES: list[tuple[str, Path]] | None = None
@@ -157,14 +159,19 @@ def _windows_font_files() -> list[tuple[str, Path]]:
     return entries
 
 
-def _macos_font_files() -> list[tuple[str, Path]]:
-    """List font files from the standard macOS font directories."""
-    directories = (
+def _macos_font_directories() -> tuple[Path, ...]:
+    """Standard directories that contain macOS font files."""
+    return (
         Path("/System/Library/Fonts"),
         Path("/System/Library/Fonts/Supplemental"),
         Path("/Library/Fonts"),
         Path.home() / "Library" / "Fonts",
     )
+
+
+def _macos_font_files() -> list[tuple[str, Path]]:
+    """List font files from the standard macOS font directories."""
+    directories = _macos_font_directories()
     return [
         (path.stem, path)
         for directory in directories

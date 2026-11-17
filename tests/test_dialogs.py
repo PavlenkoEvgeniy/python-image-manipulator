@@ -117,3 +117,29 @@ def test_about_icon_failure_is_logged(root, monkeypatch, caplog):
 
     assert "Could not load the About dialog icon" in caplog.text
     assert _image_labels(root) == []
+
+
+def test_update_dialog_rewrites_an_insecure_url(root, monkeypatch, caplog):
+    opened = []
+    monkeypatch.setattr(
+        dialogs.webbrowser, "open", lambda url: opened.append(url) or False
+    )
+    info = UpdateInfo(
+        version="9.0.0",
+        download_url="http://insecure.example/linux",
+        release_url="https://example.com/release",
+    )
+
+    dialog = dialogs.UpdateDialog(root, info)
+    with caplog.at_level(logging.WARNING, logger=dialogs.logger.name):
+        dialog._download()
+
+    assert opened == ["https://example.com/release"]
+    assert "Could not open the download page" in caplog.text
+
+
+def test_message_dialogs_warning_and_error_when_mapped(root, monkeypatch):
+    monkeypatch.setattr(tk.Misc, "winfo_ismapped", lambda self: True)
+
+    dialogs.MessageDialogs.show_warning("Warning", "Careful", parent=root)
+    dialogs.MessageDialogs.show_error("Error", "Broken", parent=root)
