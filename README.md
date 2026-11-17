@@ -223,7 +223,7 @@ default while the remaining settings load as-is.
 
 ## ℹ️ About
 
-- **Version:** 1.8.3
+- **Version:** 1.8.4
 - **License:** MIT
 - **Author:** Pavlenko Evgeniy
 - **Email:** [pavlenkoevgeniy85@gmail.com](mailto:pavlenkoevgeniy85@gmail.com)
