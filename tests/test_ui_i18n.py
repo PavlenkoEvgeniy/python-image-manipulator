@@ -1,5 +1,7 @@
 """Tk smoke tests for the interface language (skipped without a display)."""
 
+import time
+
 import pytest
 
 tk = pytest.importorskip("tkinter")
@@ -48,6 +50,39 @@ def test_snapshot_stores_canonical_enum_tokens(app):
     assert snapshot["position"] == "bottom right"
     assert snapshot["font_style"] == "Bold"
     assert snapshot["language"] == "ru"
+
+
+def _pump(root, seconds=0.5):
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        root.update()
+        time.sleep(0.02)
+
+
+def test_reset_does_not_resave_and_announces_restart(app, monkeypatch):
+    application, root = app
+    saved, cleared, notices = [], [], []
+    monkeypatch.setattr(
+        ui, "save_settings", lambda *a, **k: saved.append(True) or True
+    )
+    monkeypatch.setattr(
+        ui, "clear_settings", lambda *a, **k: cleared.append(True) or True
+    )
+    monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **k: True)
+    monkeypatch.setattr(ui, "detect_system_language", lambda: "en")
+    monkeypatch.setattr(
+        ui.ErrorDialog,
+        "show_info",
+        staticmethod(lambda *a, **k: notices.append(a)),
+    )
+
+    application.reset_settings()
+    _pump(root)
+
+    assert cleared == [True]
+    assert saved == []
+    assert application._save_after_id is None
+    assert notices
 
 
 def test_update_result_opens_the_update_dialog(app, monkeypatch):

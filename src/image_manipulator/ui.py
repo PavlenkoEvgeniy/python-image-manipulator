@@ -79,6 +79,7 @@ class ManipulatorApp:
         self._processing = False
         self._cancel_event = threading.Event()
         self._applying_preset = False
+        self._resetting = False
         self._update_check_running = False
         self._events: queue.Queue = queue.Queue()
         self._window_icon = None
@@ -589,6 +590,8 @@ class ManipulatorApp:
 
     def _on_setting_changed(self, *_args) -> None:
         """Refresh the preview and autosave, both debounced."""
+        if self._resetting:
+            return
         self._schedule_preview()
         self._schedule_settings_save()
 
@@ -917,9 +920,22 @@ class ManipulatorApp:
             parent=self.root,
         ):
             return
-        clear_settings()
-        self._reset_settings_widgets()
+        self._cancel_scheduled_preview()
+        self._cancel_scheduled_settings_save()
+        previous_language = get_language()
+        self._resetting = True
+        try:
+            clear_settings()
+            self._reset_settings_widgets()
+        finally:
+            self._resetting = False
         self.status_var.set(tr("status.settings_reset"))
+        if self.language_var.get() != previous_language:
+            ErrorDialog.show_info(
+                tr("menu.file.language.restart_title"),
+                tr("menu.file.language.restart_message"),
+                parent=self.root,
+            )
 
     def _reset_settings_widgets(self) -> None:
         """Reset all setting widgets to their defaults."""
