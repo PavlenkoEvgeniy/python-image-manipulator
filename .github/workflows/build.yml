@@ -45,6 +45,9 @@ jobs:
       - name: Run vulture
         run: vulture src tests --min-confidence 80
 
+      - name: Run codespell
+        run: codespell src tests tools README.md CLAUDE.md GLOSSARY.md --skip="*.json,*.png,*.ico,*.icns"
+
       - name: Install xvfb
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y xvfb

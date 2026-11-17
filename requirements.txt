@@ -11,3 +11,5 @@ pytest-cov>=4.0.0
 ruff>=0.6.0
 mypy>=1.8.0
 vulture>=2.11.0
+pre-commit>=3.7.0
+codespell>=2.2.0
