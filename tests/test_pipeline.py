@@ -1,10 +1,12 @@
 """Tests for the resize → text → save pipeline."""
 
+import os
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
-from image_manipulator.pipeline import ImageManipulator, load_image
+from image_manipulator.pipeline import ImageManipulator, load_image, save_image
 from image_manipulator.resize import OutputFormat
 from image_manipulator.text_overlay import TextOverlay
 
@@ -276,3 +278,53 @@ class TestOrientation:
         with Image.open(result.output_path) as saved:
             # Display orientation is portrait: 200x400 scaled by 2.5
             assert saved.size == (500, 1000)
+
+
+class TestAtomicSave:
+    """A failed write must never damage the destination file."""
+
+    @staticmethod
+    def _fail_after_truncating(monkeypatch):
+        def failing_save(self, target, *args, **kwargs):
+            Path(target).write_bytes(b"partial")
+            raise OSError("disk full")
+
+        monkeypatch.setattr(Image.Image, "save", failing_save)
+
+    def test_failed_save_leaves_the_destination_untouched(self, tmp_path, monkeypatch):
+        destination = _make_image(tmp_path / "photo.png")
+        original = destination.read_bytes()
+        self._fail_after_truncating(monkeypatch)
+
+        with pytest.raises(OSError):
+            save_image(Image.new("RGB", (10, 10)), destination, "PNG")
+
+        assert destination.read_bytes() == original
+        assert list(tmp_path.glob(".photo-*.tmp")) == []
+
+    def test_failed_overwrite_reports_an_error_and_keeps_the_original(
+        self, tmp_path, monkeypatch
+    ):
+        source = _make_image(tmp_path / "photo.png")
+        original = source.read_bytes()
+        self._fail_after_truncating(monkeypatch)
+
+        result = ImageManipulator(
+            target_width=10, target_height=10
+        ).process_path(source, tmp_path, overwrite=True)
+
+        assert result.success is False
+        assert source.read_bytes() == original
+        assert list(tmp_path.glob(".photo-*.tmp")) == []
+
+    @pytest.mark.skipif(os.name != "posix", reason="POSIX file permissions")
+    def test_overwrite_preserves_file_permissions(self, tmp_path):
+        source = _make_image(tmp_path / "photo.png")
+        os.chmod(source, 0o640)
+
+        result = ImageManipulator(
+            target_width=10, target_height=10
+        ).process_path(source, tmp_path, overwrite=True)
+
+        assert result.success is True
+        assert source.stat().st_mode & 0o777 == 0o640

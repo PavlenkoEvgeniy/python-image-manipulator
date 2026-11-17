@@ -1,6 +1,8 @@
 """Processing pipeline: load → resize → text overlay → save."""
 
 import logging
+import os
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Tuple
@@ -134,7 +136,32 @@ def save_image(
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    prepared.save(path, format=pil_format, **kwargs)
+
+    # Encode into a sibling temporary file and replace the destination only
+    # after the encoder has finished. Pillow truncates its target as soon as
+    # it opens it, so writing directly would destroy an original being
+    # overwritten if encoding fails or the process is killed.
+    destination = path.resolve()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    existing_mode = destination.stat().st_mode if destination.exists() else None
+    fd, temp_name = tempfile.mkstemp(
+        prefix=f".{destination.stem}-", suffix=".tmp", dir=destination.parent
+    )
+    os.close(fd)
+    temp_path = Path(temp_name)
+    try:
+        prepared.save(temp_path, format=pil_format, **kwargs)
+        if existing_mode is not None:
+            os.chmod(temp_path, existing_mode & 0o7777)
+        else:
+            os.chmod(temp_path, 0o644)
+        os.replace(temp_path, destination)
+    except BaseException:
+        try:
+            temp_path.unlink()
+        except OSError:
+            pass
+        raise
 
 
 class ImageManipulator:
