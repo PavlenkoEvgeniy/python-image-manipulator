@@ -2,7 +2,10 @@
 
 import logging
 import os
+import re
+import sys
 from enum import Enum
+from pathlib import Path
 from typing import Optional, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
@@ -12,6 +15,178 @@ from .config import config
 FontType = Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
 
 logger = logging.getLogger(__name__)
+
+_ALLOWED_FONT_SUFFIXES = {
+    "",
+    "regular",
+    "normal",
+    "book",
+    "roman",
+    "bold",
+    "italic",
+    "oblique",
+    "bolditalic",
+    "italicbold",
+    "semibold",
+    "demibold",
+    "light",
+    "extralight",
+    "ultralight",
+    "black",
+    "heavy",
+    "medium",
+    "thin",
+}
+_FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
+_PLATFORM_FONT_FILES = None
+_WARNED_UNRESOLVED_FAMILIES = set()
+
+
+def _normalize_font_text(value: str) -> str:
+    """Reduce a font file name or registry label to a comparison key."""
+    text = os.path.splitext(os.path.basename(str(value)))[0]
+    text = re.sub(r"\((?:TrueType|OpenType|All Res)\)", " ", text, flags=re.I)
+    return re.sub(r"[^a-z0-9]+", "", text.lower())
+
+
+def _font_style_flags(name: str) -> Tuple[bool, bool, bool]:
+    """Return (bold, italic, condensed) flags for a font label."""
+    normalized = _normalize_font_text(name)
+    bold = any(
+        token in normalized
+        for token in ("bold", "black", "heavy", "semibold", "demibold")
+    )
+    italic = "italic" in normalized or "oblique" in normalized
+    condensed = "condensed" in normalized or "narrow" in normalized
+    return bold, italic, condensed
+
+
+def _choose_platform_font(
+    files: list[tuple[str, Path]], family: str, style: str
+) -> list[Path]:
+    """Pick the best installed file for a family and style.
+
+    ``files`` contains (display name, path) pairs from the Windows registry or
+    the macOS font directories. The function is pure so it can be tested
+    without those platforms.
+    """
+    family_key = _normalize_font_text(family)
+    wanted_bold, wanted_italic, _ = _font_style_flags(style)
+    best = None
+    best_key = None
+    for display_name, path in files:
+        normalized = _normalize_font_text(display_name)
+        if not normalized.startswith(family_key):
+            continue
+        suffix = normalized[len(family_key) :]
+        if suffix not in _ALLOWED_FONT_SUFFIXES:
+            continue
+        bold, italic, condensed = _font_style_flags(display_name)
+        if condensed and "condensed" not in family.lower() and "narrow" not in family.lower():
+            continue
+        score = 0
+        if bold == wanted_bold:
+            score += 4
+        if italic == wanted_italic:
+            score += 4
+        if suffix in ("", "regular", "normal", "book", "roman"):
+            score += 2
+        if path.is_file():
+            score += 1
+        candidate_key = (-score, len(normalized), str(path))
+        if best_key is None or candidate_key < best_key:
+            best_key = candidate_key
+            best = path
+    return [best] if best is not None else []
+
+
+def _windows_font_files() -> list[tuple[str, Path]]:
+    """Read family labels and file paths from the Windows font registry."""
+    try:
+        import winreg
+    except ImportError:
+        return []
+
+    font_dir = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
+    user_dir = (
+        Path(os.environ.get("LOCALAPPDATA", ""))
+        / "Microsoft"
+        / "Windows"
+        / "Fonts"
+    )
+    entries = []
+    keys = (
+        (
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
+        ),
+        (
+            winreg.HKEY_CURRENT_USER,
+            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
+        ),
+    )
+    for hive, key_name in keys:
+        try:
+            with winreg.OpenKey(hive, key_name) as key:
+                index = 0
+                while True:
+                    try:
+                        name, value, _ = winreg.EnumValue(key, index)
+                    except OSError:
+                        break
+                    index += 1
+                    path = Path(value)
+                    if not path.is_absolute():
+                        path = font_dir / path
+                    if path.suffix.lower() in _FONT_EXTENSIONS:
+                        entries.append((name, path))
+        except OSError:
+            continue
+
+    if user_dir.is_dir():
+        for path in user_dir.iterdir():
+            if path.suffix.lower() in _FONT_EXTENSIONS:
+                entries.append((path.stem, path))
+    return entries
+
+
+def _macos_font_files() -> list[tuple[str, Path]]:
+    """List font files from the standard macOS font directories."""
+    directories = (
+        Path("/System/Library/Fonts"),
+        Path("/System/Library/Fonts/Supplemental"),
+        Path("/Library/Fonts"),
+        Path.home() / "Library" / "Fonts",
+    )
+    entries = []
+    for directory in directories:
+        if not directory.is_dir():
+            continue
+        for path in directory.rglob("*"):
+            if path.is_file() and path.suffix.lower() in _FONT_EXTENSIONS:
+                entries.append((path.stem, path))
+    return entries
+
+
+def _platform_font_files() -> list[tuple[str, Path]]:
+    """Return a cached font file list for Windows and macOS."""
+    global _PLATFORM_FONT_FILES
+    if _PLATFORM_FONT_FILES is None:
+        if sys.platform.startswith("win"):
+            _PLATFORM_FONT_FILES = _windows_font_files()
+        elif sys.platform == "darwin":
+            _PLATFORM_FONT_FILES = _macos_font_files()
+        else:
+            _PLATFORM_FONT_FILES = []
+    return _PLATFORM_FONT_FILES
+
+
+def _default_font(size: int) -> FontType:
+    """Load Pillow's default font at the requested size when supported."""
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:
+        return ImageFont.load_default()
 
 
 class FontStyle(Enum):
@@ -118,13 +293,24 @@ class TextOverlay:
             except Exception:
                 continue
 
-        logger.debug(f"Could not resolve system font family: {family}")
+        if family not in _WARNED_UNRESOLVED_FAMILIES:
+            logger.warning(
+                "Could not resolve system font family %r; using fallback",
+                family,
+            )
+            _WARNED_UNRESOLVED_FAMILIES.add(family)
         return None
 
     @staticmethod
     def _fontconfig_candidates(family: str, fc_style: str) -> list:
-        """Ask fontconfig for the best face of a family, best style first."""
+        """Find the best face of a family, platform by platform."""
         import subprocess
+
+        platform_matches = _choose_platform_font(
+            _platform_font_files(), family, fc_style
+        )
+        if platform_matches:
+            return [str(path) for path in platform_matches]
 
         # Fontconfig style names differ between families (Book, Roman,
         # Oblique), so ask by slant and weight instead of by style name.
@@ -205,13 +391,13 @@ class TextOverlay:
                 continue
 
         logger.info("Using default PIL font")
-        yield ImageFont.load_default()
+        yield _default_font(size)
 
     def get_font(self, size: int) -> FontType:
         """Get the first loadable font from the fallback chain."""
         for font in self._font_candidates(size):
             return font
-        return ImageFont.load_default()
+        return _default_font(size)
 
     def get_font_for_text(self, size: int, text: str) -> FontType:
         """Get a font that actually renders visible glyphs for the text.
@@ -226,7 +412,7 @@ class TextOverlay:
                 return font
             source = getattr(font, "path", "default PIL font")
             logger.warning(f"Font {source} lacks glyphs for the text; trying next")
-        return last if last is not None else ImageFont.load_default()
+        return last if last is not None else _default_font(size)
 
     @staticmethod
     def _renders_text(font: FontType, text: str) -> bool:

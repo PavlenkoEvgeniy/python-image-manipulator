@@ -7,7 +7,11 @@ import pytest
 from PIL import Image, ImageDraw
 
 from image_manipulator.config import config
-from image_manipulator.text_overlay import TextOverlay
+from image_manipulator.text_overlay import (
+    TextOverlay,
+    _choose_platform_font,
+    _normalize_font_text,
+)
 
 
 def _sample_image():
@@ -239,6 +243,61 @@ class TestFontconfigFaces:
         monkeypatch.setattr(subprocess, "run", missing)
 
         assert TextOverlay._fontconfig_candidates("DejaVu Sans", "Regular") == []
+
+
+class TestPlatformFontResolution:
+    """Windows/macOS font files are matched by family and style."""
+
+    @staticmethod
+    def _files(tmp_path):
+        names = {
+            "regular": "Segoe UI (TrueType)",
+            "bold": "Segoe UI Bold (TrueType)",
+            "italic": "Segoe UI Italic (TrueType)",
+            "bold_italic": "Segoe UI Bold Italic (TrueType)",
+            "condensed": "Segoe UI Condensed (TrueType)",
+            "other": "Segoe UI Symbol (TrueType)",
+        }
+        files = []
+        for key, display in names.items():
+            path = tmp_path / f"{key}.ttf"
+            path.write_bytes(b"font")
+            files.append((display, path))
+        return files
+
+    def test_normalizes_registry_labels(self):
+        assert _normalize_font_text("Segoe UI Bold (TrueType)") == "segoeuibold"
+        assert _normalize_font_text("HelveticaNeue-Bold.otf") == "helveticaneuebold"
+
+    @pytest.mark.parametrize(
+        ("style", "expected"),
+        [
+            ("Regular", "regular"),
+            ("Bold", "bold"),
+            ("Italic", "italic"),
+            ("Bold Italic", "bold_italic"),
+        ],
+    )
+    def test_selects_the_requested_face(self, tmp_path, style, expected):
+        files = self._files(tmp_path)
+
+        chosen = _choose_platform_font(files, "Segoe UI", style)
+
+        assert chosen == [tmp_path / f"{expected}.ttf"]
+
+    def test_condensed_and_unrelated_faces_are_ignored(self, tmp_path):
+        files = self._files(tmp_path)
+
+        chosen = _choose_platform_font(files, "Segoe UI", "Regular")
+
+        assert chosen == [tmp_path / "regular.ttf"]
+        assert all("condensed" not in path.name for path in chosen)
+        assert all("other" not in path.name for path in chosen)
+
+    def test_unknown_family_has_no_platform_match(self, tmp_path):
+        files = self._files(tmp_path)
+
+        assert _choose_platform_font(files, "Missing Family", "Regular") == []
 
 
 class TestMeasurementFallback:
