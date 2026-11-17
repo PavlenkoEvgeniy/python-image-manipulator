@@ -92,16 +92,16 @@ def _pump(root, seconds=0.5):
 def test_reset_does_not_resave_and_announces_restart(app, monkeypatch):
     application, root = app
     saved, cleared, notices = [], [], []
-    monkeypatch.setattr(ui, "save_settings", lambda *a, **k: saved.append(True) or True)
+    monkeypatch.setattr(ui, "save_settings", lambda *a, **_: saved.append(True) or True)
     monkeypatch.setattr(
-        ui, "clear_settings", lambda *a, **k: cleared.append(True) or True
+        ui, "clear_settings", lambda *a, **_: cleared.append(True) or True
     )
-    monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **k: True)
+    monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **_: True)
     monkeypatch.setattr(ui, "detect_system_language", lambda: "en")
     monkeypatch.setattr(
         ui.ErrorDialog,
         "show_info",
-        staticmethod(lambda *a, **k: notices.append(a)),
+        staticmethod(lambda *a, **_: notices.append(a)),
     )
 
     application.reset_settings()

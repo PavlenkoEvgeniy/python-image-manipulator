@@ -27,6 +27,7 @@ typecheck:
 quality: lint
 	ruff format --check src tests tools main.py
 	mypy src
+	vulture src tests --min-confidence 80
 	python -m pytest -q
 
 install-dev:

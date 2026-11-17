@@ -8,6 +8,7 @@ back to its own default while the remaining fields load as-is.
 
 import contextlib
 import json
+import logging
 import os
 import re
 import sys
@@ -16,9 +17,8 @@ from typing import Any, Optional
 
 from .config import config
 from .i18n import detect_system_language, validate_language
-from .logging_config import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 SETTINGS_VERSION = 1
 SETTINGS_DIR_NAME = "image-manipulator"

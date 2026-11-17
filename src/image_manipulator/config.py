@@ -3,7 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
-from typing import Optional
+from typing import ClassVar, Optional
 
 
 @dataclass
@@ -64,14 +64,30 @@ class AppConfig:
     default_font_style: str = "Normal"
     default_font_family: str = "Arial"
 
-    font_styles: tuple[str, ...] = ("Normal", "Bold", "Italic", "Bold Italic")
-    text_positions: tuple[str, ...] = (
-        "top left",
-        "top right",
-        "bottom left",
-        "bottom right",
-        "center",
-    )
+    # One registry per vocabulary: canonical token -> translation key and
+    # the font attributes used to resolve and synthesize the style.
+    STYLE_SPECS: ClassVar[dict[str, tuple[str, str, str, bool, bool]]] = {
+        "Normal": ("style.normal", "", "Regular", False, False),
+        "Bold": ("style.bold", " Bold", "Bold", True, False),
+        "Italic": ("style.italic", " Italic", "Italic", False, True),
+        "Bold Italic": (
+            "style.bold_italic",
+            " Bold Italic",
+            "Bold Italic",
+            True,
+            True,
+        ),
+    }
+    POSITION_KEYS: ClassVar[dict[str, str]] = {
+        "top left": "position.top_left",
+        "top right": "position.top_right",
+        "bottom left": "position.bottom_left",
+        "bottom right": "position.bottom_right",
+        "center": "position.center",
+    }
+
+    font_styles: tuple[str, ...] = tuple(STYLE_SPECS)
+    text_positions: tuple[str, ...] = tuple(POSITION_KEYS)
 
     min_font_size: int = 10
     max_font_size: int = 200
@@ -118,12 +134,6 @@ def get_app_dir() -> str:
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
-
-
-def resource_path(relative_path: str) -> str:
-    """Get an absolute path to a resource (works with PyInstaller)."""
-    base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
-    return os.path.join(base_path, relative_path)
 
 
 # Global config instance

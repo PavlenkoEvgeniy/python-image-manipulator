@@ -27,7 +27,6 @@ class Language:
 
     code: str
     native_name: str
-    english_name: str
     preferred_fonts: tuple[str, ...] = ()
 
 
@@ -35,43 +34,39 @@ class Language:
 # Tk 8.6 does not shape Devanagari or Arabic scripts, so they would render
 # broken on every platform. CJK, Latin and Cyrillic need no shaping.
 LANGUAGES: tuple[Language, ...] = (
-    Language("en", "English", "English"),
-    Language("ru", "Русский", "Russian"),
-    Language("es", "Español", "Spanish"),
-    Language("fr", "Français", "French"),
-    Language("de", "Deutsch", "German"),
-    Language("pt_BR", "Português (Brasil)", "Portuguese (Brazil)"),
-    Language("it", "Italiano", "Italian"),
+    Language("en", "English"),
+    Language("ru", "Русский"),
+    Language("es", "Español"),
+    Language("fr", "Français"),
+    Language("de", "Deutsch"),
+    Language("pt_BR", "Português (Brasil)"),
+    Language("it", "Italiano"),
     Language(
         "zh_CN",
         "简体中文",
-        "Chinese (Simplified)",
         ("Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Noto Sans SC"),
     ),
     Language(
         "ja",
         "日本語",
-        "Japanese",
         ("Yu Gothic UI", "Yu Gothic", "Hiragino Sans", "Meiryo", "Noto Sans CJK JP"),
     ),
     Language(
         "ko",
         "한국어",
-        "Korean",
         ("Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans KR"),
     ),
-    Language("tl", "Tagalog", "Tagalog"),
-    Language("tr", "Türkçe", "Turkish"),
-    Language("nl", "Nederlands", "Dutch"),
-    Language("pl", "Polski", "Polish"),
-    Language("uk", "Українська", "Ukrainian"),
-    Language("id", "Bahasa Indonesia", "Indonesian"),
+    Language("tl", "Tagalog"),
+    Language("tr", "Türkçe"),
+    Language("nl", "Nederlands"),
+    Language("pl", "Polski"),
+    Language("uk", "Українська"),
+    Language("id", "Bahasa Indonesia"),
 )
 
 LANGUAGES_BY_CODE: dict[str, Language] = {
     language.code: language for language in LANGUAGES
 }
-SUPPORTED_CODES: tuple[str, ...] = tuple(LANGUAGES_BY_CODE)
 
 # Windows reports locale names such as "Russian_Russia.1251", not POSIX
 # codes. Map the English language names to the catalogs we ship.
@@ -96,19 +91,8 @@ _WINDOWS_LANGUAGE_ALIASES: dict[str, str] = {
 }
 
 _ENUM_KEYS: dict[str, dict[str, str]] = {
-    "position": {
-        "top left": "position.top_left",
-        "top right": "position.top_right",
-        "bottom left": "position.bottom_left",
-        "bottom right": "position.bottom_right",
-        "center": "position.center",
-    },
-    "font_style": {
-        "Normal": "style.normal",
-        "Bold": "style.bold",
-        "Italic": "style.italic",
-        "Bold Italic": "style.bold_italic",
-    },
+    "position": dict(config.POSITION_KEYS),
+    "font_style": {token: spec[0] for token, spec in config.STYLE_SPECS.items()},
 }
 
 _catalogs: dict[str, dict[str, str]] = {}

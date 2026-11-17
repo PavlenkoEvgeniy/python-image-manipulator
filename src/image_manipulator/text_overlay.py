@@ -5,7 +5,6 @@ import os
 import re
 import sys
 from collections.abc import Iterator
-from enum import Enum
 from pathlib import Path
 from typing import Any, ClassVar, Optional, Union, cast
 
@@ -196,45 +195,19 @@ def _default_font(size: int) -> FontType:
         return ImageFont.load_default()
 
 
-class FontStyle(Enum):
-    """Font style enumeration."""
-
-    NORMAL = "normal"
-    BOLD = "bold"
-    ITALIC = "italic"
-    BOLD_ITALIC = "bold italic"
-
-
-class TextPosition(Enum):
-    """Text position enumeration."""
-
-    TOP_LEFT = "top left"
-    TOP_RIGHT = "top right"
-    BOTTOM_LEFT = "bottom left"
-    BOTTOM_RIGHT = "bottom right"
-    CENTER = "center"
-
-
 class TextOverlay:
     """Draws styled text onto an image."""
 
     # Shear factor used to synthesize italic (oblique) text.
     ITALIC_SHEAR = 0.25
 
-    # Suffix appended to a family name to probe its styled variant.
+    # The canonical style registry from config drives the family suffix,
+    # fontconfig style and bold/italic flags used below.
     STYLE_SUFFIXES: ClassVar[dict[str, str]] = {
-        "Normal": "",
-        "Bold": " Bold",
-        "Italic": " Italic",
-        "Bold Italic": " Bold Italic",
+        token: spec[1] for token, spec in config.STYLE_SPECS.items()
     }
-
-    # Style names as fontconfig reports them.
     FC_STYLE_NAMES: ClassVar[dict[str, str]] = {
-        "Normal": "Regular",
-        "Bold": "Bold",
-        "Italic": "Italic",
-        "Bold Italic": "Bold Italic",
+        token: spec[2] for token, spec in config.STYLE_SPECS.items()
     }
 
     def __init__(
@@ -467,7 +440,10 @@ class TextOverlay:
     # --- Text metrics and placement ---
 
     def _get_style_flags(self) -> tuple[bool, bool]:
-        """Get (bold, italic) flags from the font style setting."""
+        """Get (bold, italic) flags from the canonical style token."""
+        spec = config.STYLE_SPECS.get(self.font_style or "")
+        if spec is not None:
+            return spec[3], spec[4]
         style = (self.font_style or "").strip().lower()
         return "bold" in style, "italic" in style
 

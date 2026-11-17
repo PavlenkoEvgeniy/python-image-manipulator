@@ -185,7 +185,7 @@ class TestCloseDuringBatch:
         return app, destroyed
 
     def test_cancelled_confirmation_keeps_the_window_open(self, monkeypatch):
-        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **k: False)
+        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **_: False)
         app, destroyed = self._app()
 
         ui.ManipulatorApp._on_close(app)
@@ -196,7 +196,7 @@ class TestCloseDuringBatch:
     def test_confirmed_close_cancels_the_worker_and_destroys_the_window(
         self, monkeypatch
     ):
-        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **k: True)
+        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **_: True)
         app, destroyed = self._app()
 
         ui.ManipulatorApp._on_close(app)

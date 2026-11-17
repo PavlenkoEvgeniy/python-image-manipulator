@@ -228,7 +228,6 @@ class ManipulatorApp:
         main.pack(fill=tk.BOTH, expand=True)
         main.columnconfigure(1, weight=1)
         main.rowconfigure(1, weight=1)
-        self._main_frame = main
 
         self._create_load_section(main)
         self._create_settings_section(main)
@@ -1026,9 +1025,10 @@ class ManipulatorApp:
 
     def choose_font(self) -> None:
         """Pick a custom .ttf/.otf font file."""
+        patterns = " ".join("*" + ext for ext in config.font_extensions)
         path = filedialog.askopenfilename(
             title=tr("dialog.select_font_file"),
-            filetypes=[(tr("dialog.filter_fonts"), "*.ttf *.otf")],
+            filetypes=[(tr("dialog.filter_fonts"), patterns)],
         )
         if not path:
             return

@@ -37,6 +37,7 @@ dev = [
     "pytest-cov>=4.0.0",
     "ruff>=0.6.0",
     "mypy>=1.8.0",
+    "vulture>=2.11.0",
 ]
 dnd = [
     "tkinterdnd2>=0.3.0",

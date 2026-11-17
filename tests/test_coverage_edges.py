@@ -94,19 +94,6 @@ class _Window:
 
 
 class TestConfigPaths:
-    def test_resource_path_uses_meipass(self, monkeypatch):
-        monkeypatch.setattr(sys, "_MEIPASS", "/bundle", raising=False)
-
-        assert config.resource_path("icon.png") == os.path.join("/bundle", "icon.png")
-
-    def test_resource_path_falls_back_to_cwd(self, monkeypatch, tmp_path):
-        monkeypatch.delattr(sys, "_MEIPASS", raising=False)
-        monkeypatch.chdir(tmp_path)
-
-        assert config.resource_path("icon.png") == os.path.join(
-            str(tmp_path), "icon.png"
-        )
-
     def test_get_app_dir_for_frozen_build(self, monkeypatch):
         monkeypatch.setattr(sys, "frozen", True, raising=False)
         monkeypatch.setattr(sys, "executable", "/opt/app/image-manipulator")
