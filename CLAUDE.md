@@ -63,7 +63,7 @@ deliberately independent of Tkinter:
   format-aware saving, and transparency flattening for JPEG/BMP.
 - `settings_store.py` — versioned JSON settings with per-field validation/fallback
   and atomic writes.
-- `ui.py` — Tkinter window: Resize/Text tabs, file list, debounced live preview,
+- `ui.py` — Tkinter window: toolbar, Resize/Text tabs, file list, debounced live preview,
   autosave, and a background batch worker. Worker threads never touch Tk widgets;
   status and completion events go through a `queue.Queue` polled on the main thread.
 - `i18n.py` — JSON catalogs in `locales/`, symbolic message IDs, English fallback,

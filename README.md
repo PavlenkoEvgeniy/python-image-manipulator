@@ -23,7 +23,7 @@ the date, making them look just like they came straight from a camera.
 - 🧭 **Orientation** — EXIF rotation is baked into the pixels before resizing
 - 💽 **Settings persistence** — all settings are restored on the next launch
 - 📊 **Progress and errors** — processing runs in a background thread with a batch summary
-- 🌍 **Interface languages** — 16 languages, selectable in File → Language
+- 🌍 **Interface languages** — 16 languages, selectable with the **Language** button in the top toolbar
 - 🔄 **Update check** — optional check for a newer release at every launch, with a direct download for your OS
 
 ## 🖼️ Screenshot
@@ -68,7 +68,7 @@ folder, the home directory is used.
 The interface is available in English, Russian, Spanish, French, German,
 Portuguese (Brazil), Italian, Chinese (Simplified), Japanese, Korean, Tagalog
 (Filipino), Turkish, Dutch, Polish, Ukrainian, and Indonesian.
-Choose a language under **File → Language**; it applies after the application
+Choose a language with the **Language** button in the top toolbar; it applies after the application
 is restarted. On the first launch the language is taken from the OS locale and
 falls back to English.
 
@@ -154,7 +154,7 @@ image-manipulator
 4. In the **Output** section, choose the folder, format, and overwrite behavior.
 5. Click **Process All** to process and save every image.
 
-Settings are saved automatically. `File → Reset Settings` restores the defaults
+Settings are saved automatically. The **Reset Settings** toolbar button restores the defaults
 and deletes the settings file.
 
 ## 📁 Supported Formats

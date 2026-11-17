@@ -7,7 +7,7 @@ import queue
 import threading
 import tkinter as tk
 import tkinter.font as tkfont
-from tkinter import colorchooser, filedialog, messagebox, ttk
+from tkinter import colorchooser, filedialog, messagebox
 
 from PIL import Image, ImageTk
 
@@ -15,6 +15,7 @@ from . import __version__
 from .config import config, get_app_dir
 from .debounce import Debouncer
 from .dialogs import AboutDialog, MessageDialogs, UpdateDialog
+from .font_selector import FontFamilySelector
 from .i18n import (
     LANGUAGES,
     canonical_enum,
@@ -104,7 +105,6 @@ class ManipulatorApp:
         self._setup_window()
         self._set_window_icon()
         self._create_vars()
-        self._create_menu()
         self._create_widgets()
 
         # Restore Saved settings, then start reacting to future changes.
@@ -183,25 +183,18 @@ class ManipulatorApp:
         self.output_size_var = tk.StringVar(value=tr("preview.output_size_empty"))
         self.status_var = tk.StringVar(value=tr("status.ready"))
 
-    def _create_menu(self) -> None:
-        """Create the application menu."""
-        menubar = tk.Menu(self.root)
-        self.root.config(menu=menubar)
+    def _create_toolbar(self) -> None:
+        """Create the compact top toolbar instead of a slow native menubar."""
+        toolbar = tk.Frame(self.root, bd=1, relief=tk.GROOVE, padx=6, pady=4)
+        toolbar.pack(fill=tk.X)
 
-        file_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label=tr("menu.file"), menu=file_menu)
-        file_menu.add_command(
-            label=tr("menu.file.add_images"), command=self.load_images
+        language_button = tk.Menubutton(
+            toolbar,
+            text=tr("menu.file.language"),
+            relief=tk.RAISED,
+            padx=6,
         )
-        file_menu.add_command(
-            label=tr("menu.file.remove_selected"), command=self.remove_selected
-        )
-        file_menu.add_command(
-            label=tr("menu.file.clear_list"), command=self.clear_images
-        )
-        file_menu.add_separator()
-
-        language_menu = tk.Menu(file_menu, tearoff=0)
+        language_menu = tk.Menu(language_button, tearoff=0)
         for language in LANGUAGES:
             language_menu.add_radiobutton(
                 label=language.native_name,
@@ -209,24 +202,34 @@ class ManipulatorApp:
                 value=language.code,
                 command=self._on_language_selected,
             )
-        file_menu.add_cascade(label=tr("menu.file.language"), menu=language_menu)
-        file_menu.add_command(
-            label=tr("menu.file.reset_settings"), command=self.reset_settings
-        )
-        file_menu.add_separator()
-        file_menu.add_command(label=tr("menu.file.exit"), command=self._on_close)
+        language_button.config(menu=language_menu)
+        language_button.pack(side=tk.LEFT, padx=(0, 8))
 
-        help_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label=tr("menu.help"), menu=help_menu)
-        help_menu.add_command(
-            label=tr("menu.help.check_updates"), command=self.check_updates_now
-        )
-        help_menu.add_checkbutton(
-            label=tr("menu.help.check_updates_auto"),
+        tk.Button(
+            toolbar,
+            text=tr("menu.file.reset_settings"),
+            command=self.reset_settings,
+        ).pack(side=tk.LEFT, padx=4)
+        tk.Button(
+            toolbar,
+            text=tr("menu.help.check_updates"),
+            command=self.check_updates_now,
+        ).pack(side=tk.LEFT, padx=4)
+        tk.Checkbutton(
+            toolbar,
+            text=tr("menu.help.check_updates_auto"),
             variable=self.check_updates_var,
-        )
-        help_menu.add_separator()
-        help_menu.add_command(label=tr("menu.help.about"), command=self.show_about)
+        ).pack(side=tk.LEFT, padx=4)
+        tk.Button(
+            toolbar,
+            text=tr("menu.help.about"),
+            command=self.show_about,
+        ).pack(side=tk.LEFT, padx=4)
+        tk.Button(
+            toolbar,
+            text=tr("menu.file.exit"),
+            command=self._on_close,
+        ).pack(side=tk.LEFT, padx=4)
 
     def _on_language_selected(self) -> None:
         """Save the chosen language; it applies after the next restart."""
@@ -239,7 +242,8 @@ class ManipulatorApp:
 
     def _create_widgets(self) -> None:
         """Create all UI widgets."""
-        main = ttk.Frame(self.root, padding=10)
+        self._create_toolbar()
+        main = tk.Frame(self.root, padx=10, pady=10)
         main.pack(fill=tk.BOTH, expand=True)
         main.columnconfigure(1, weight=1)
         main.rowconfigure(1, weight=1)
@@ -250,28 +254,28 @@ class ManipulatorApp:
         self._create_output_section(main)
         self._create_action_section(main)
 
-    def _create_load_section(self, parent: ttk.Frame) -> None:
+    def _create_load_section(self, parent: tk.Frame) -> None:
         """Create the image list and buttons."""
-        frame = ttk.LabelFrame(parent, text=tr("section.images"), padding="8")
+        frame = tk.LabelFrame(parent, text=tr("section.images"), padx=8, pady=8)
         frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         frame.columnconfigure(3, weight=1)
 
-        ttk.Button(
+        tk.Button(
             frame, text=tr("menu.file.add_images"), command=self.load_images
         ).grid(row=0, column=0, padx=(0, 5))
-        ttk.Button(
+        tk.Button(
             frame, text=tr("menu.file.remove_selected"), command=self.remove_selected
         ).grid(row=0, column=1, padx=5)
-        ttk.Button(
+        tk.Button(
             frame, text=tr("menu.file.clear_list"), command=self.clear_images
         ).grid(row=0, column=2, padx=5)
 
         hint = tr("hint.drag_drop") if HAS_DND else tr("hint.no_drag_drop")
-        ttk.Label(frame, text=hint, foreground="#666666").grid(
+        tk.Label(frame, text=hint, foreground="#666666").grid(
             row=0, column=3, sticky="w", padx=(12, 0)
         )
 
-        list_frame = ttk.Frame(frame)
+        list_frame = tk.Frame(frame)
         list_frame.grid(row=1, column=0, columnspan=4, sticky="ew", pady=(8, 0))
         list_frame.columnconfigure(0, weight=1)
 
@@ -281,34 +285,54 @@ class ManipulatorApp:
         self.file_listbox.grid(row=0, column=0, sticky="ew")
         self.file_listbox.bind("<<ListboxSelect>>", self._on_listbox_select)
 
-        scrollbar = ttk.Scrollbar(
+        scrollbar = tk.Scrollbar(
             list_frame, orient="vertical", command=self.file_listbox.yview
         )
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.file_listbox.config(yscrollcommand=scrollbar.set)
 
-    def _create_settings_section(self, parent: ttk.Frame) -> None:
-        """Create the Resize / Text settings notebook."""
-        self.notebook = ttk.Notebook(parent)
-        self.notebook.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
+    def _create_settings_section(self, parent: tk.Frame) -> None:
+        """Create the Resize / Text settings area with lightweight tabs."""
+        section = tk.Frame(parent)
+        section.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
+        section.columnconfigure(0, weight=1)
+        section.rowconfigure(1, weight=1)
 
-        resize_tab = ttk.Frame(self.notebook, padding=10)
-        text_tab = ttk.Frame(self.notebook, padding=10)
-        self.notebook.add(resize_tab, text=tr("tab.resize"))
-        self.notebook.add(text_tab, text=tr("tab.text"))
+        tab_bar = tk.Frame(section)
+        tab_bar.grid(row=0, column=0, sticky="w", pady=(0, 6))
+        self.tab_var = tk.StringVar(value="resize")
+        for value, label_key in (("resize", "tab.resize"), ("text", "tab.text")):
+            tk.Radiobutton(
+                tab_bar,
+                text=tr(label_key),
+                variable=self.tab_var,
+                value=value,
+                indicatoron=False,
+                width=12,
+                command=self._show_tab,
+            ).pack(side=tk.LEFT, padx=2)
 
-        self._create_resize_tab(resize_tab)
-        self._create_text_tab(text_tab)
+        self.resize_tab = tk.Frame(section, padx=10, pady=10)
+        self.text_tab = tk.Frame(section, padx=10, pady=10)
+        self.resize_tab.grid(row=1, column=0, sticky="nsew")
+        self.text_tab.grid(row=1, column=0, sticky="nsew")
 
-    def _create_resize_tab(self, tab: ttk.Frame) -> None:
+        self._create_resize_tab(self.resize_tab)
+        self._create_text_tab(self.text_tab)
+        self._show_tab()
+
+    def _show_tab(self) -> None:
+        """Raise the selected settings tab."""
+        tab = self.resize_tab if self.tab_var.get() == "resize" else self.text_tab
+        tab.tkraise()
+
+    def _create_resize_tab(self, tab: tk.Frame) -> None:
         """Create the resizing controls."""
         tab.columnconfigure(1, weight=1)
         tab.columnconfigure(3, weight=1)
 
-        ttk.Label(tab, text=tr("resize.width")).grid(
-            row=0, column=0, sticky="w", pady=5
-        )
-        ttk.Spinbox(
+        tk.Label(tab, text=tr("resize.width")).grid(row=0, column=0, sticky="w", pady=5)
+        tk.Spinbox(
             tab,
             from_=config.min_dimension,
             to=config.max_dimension,
@@ -316,10 +340,10 @@ class ManipulatorApp:
             width=12,
         ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(tab, text=tr("resize.height")).grid(
+        tk.Label(tab, text=tr("resize.height")).grid(
             row=0, column=2, sticky="w", padx=(16, 0), pady=5
         )
-        ttk.Spinbox(
+        tk.Spinbox(
             tab,
             from_=config.min_dimension,
             to=config.max_dimension,
@@ -327,63 +351,64 @@ class ManipulatorApp:
             width=12,
         ).grid(row=0, column=3, sticky="w", padx=5, pady=5)
 
-        ttk.Label(tab, text=tr("resize.preset")).grid(
+        tk.Label(tab, text=tr("resize.preset")).grid(
             row=1, column=0, sticky="w", pady=5
         )
         preset_names = [
             tr("resize.custom") if name == "Custom" else name
             for name, _, _ in config.presets
         ]
-        preset_combo = ttk.Combobox(
-            tab,
-            textvariable=self.preset_var,
-            values=preset_names,
-            state="readonly",
-            width=14,
-        )
-        preset_combo.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        preset_combo.bind("<<ComboboxSelected>>", self._on_preset_selected)
+        preset_frame = tk.Frame(tab)
+        for name in preset_names:
+            tk.Radiobutton(
+                preset_frame,
+                text=name,
+                variable=self.preset_var,
+                value=name,
+                command=self._on_preset_selected,
+            ).pack(side=tk.LEFT, padx=2)
+        preset_frame.grid(row=1, column=1, columnspan=3, sticky="w", padx=5)
 
-        ttk.Checkbutton(
+        tk.Checkbutton(
             tab,
             text=tr("resize.maintain_aspect"),
             variable=self.maintain_aspect_var,
         ).grid(row=2, column=0, columnspan=2, sticky="w", pady=5)
 
-        ttk.Checkbutton(
+        tk.Checkbutton(
             tab,
             text=tr("resize.add_size"),
             variable=self.add_dimensions_var,
         ).grid(row=2, column=2, columnspan=2, sticky="w", pady=5)
 
-        ttk.Checkbutton(
+        tk.Checkbutton(
             tab,
             text=tr("resize.rotate_portrait"),
             variable=self.rotate_portrait_var,
         ).grid(row=3, column=0, columnspan=4, sticky="w", pady=5)
 
-        ttk.Separator(tab, orient="horizontal").grid(
+        tk.Frame(tab, height=2, bd=1, relief=tk.SUNKEN).grid(
             row=4, column=0, columnspan=4, sticky="ew", pady=10
         )
 
-        ttk.Label(
+        tk.Label(
             tab,
             text=tr("resize.hint"),
             foreground="#666666",
             justify="left",
         ).grid(row=5, column=0, columnspan=4, sticky="w")
 
-    def _create_text_tab(self, tab: ttk.Frame) -> None:
+    def _create_text_tab(self, tab: tk.Frame) -> None:
         """Create the text overlay controls."""
         tab.columnconfigure(1, weight=1)
         tab.columnconfigure(3, weight=1)
 
-        ttk.Label(tab, text=tr("text.label")).grid(row=0, column=0, sticky="w", pady=5)
-        ttk.Entry(tab, textvariable=self.text_var).grid(
+        tk.Label(tab, text=tr("text.label")).grid(row=0, column=0, sticky="w", pady=5)
+        tk.Entry(tab, textvariable=self.text_var).grid(
             row=0, column=1, columnspan=3, sticky="ew", padx=5, pady=5
         )
 
-        ttk.Label(tab, text=tr("text.color")).grid(row=1, column=0, sticky="w", pady=5)
+        tk.Label(tab, text=tr("text.color")).grid(row=1, column=0, sticky="w", pady=5)
         self.color_preview = tk.Label(
             tab,
             bg=self.text_color,
@@ -393,94 +418,92 @@ class ManipulatorApp:
             bd=2,
         )
         self.color_preview.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        ttk.Button(tab, text=tr("text.choose_color"), command=self.choose_color).grid(
+        tk.Button(tab, text=tr("text.choose_color"), command=self.choose_color).grid(
             row=1, column=2, columnspan=2, sticky="w", pady=5
         )
 
-        ttk.Label(tab, text=tr("text.position")).grid(
+        tk.Label(tab, text=tr("text.position")).grid(
             row=2, column=0, sticky="w", pady=5
         )
-        ttk.Combobox(
-            tab,
-            textvariable=self.position_var,
-            values=[
-                translate_enum("position", value) for value in config.text_positions
-            ],
-            state="readonly",
-            width=16,
-        ).grid(row=2, column=1, sticky="w", padx=5, pady=5)
+        position_frame = tk.Frame(tab)
+        for value in config.text_positions:
+            label = translate_enum("position", value)
+            tk.Radiobutton(
+                position_frame,
+                text=label,
+                variable=self.position_var,
+                value=label,
+            ).pack(side=tk.LEFT, padx=2)
+        position_frame.grid(row=2, column=1, columnspan=3, sticky="w", padx=5)
 
-        ttk.Label(tab, text=tr("text.font_style")).grid(
-            row=2, column=2, sticky="w", padx=(16, 0), pady=5
-        )
-        ttk.Combobox(
-            tab,
-            textvariable=self.font_style_var,
-            values=[
-                translate_enum("font_style", value) for value in config.font_styles
-            ],
-            state="readonly",
-            width=16,
-        ).grid(row=2, column=3, sticky="w", padx=5, pady=5)
-
-        ttk.Label(tab, text=tr("text.offset_up")).grid(
+        tk.Label(tab, text=tr("text.font_style")).grid(
             row=3, column=0, sticky="w", pady=5
         )
-        ttk.Entry(tab, textvariable=self.offset_up_var, width=12).grid(
-            row=3, column=1, sticky="w", padx=5, pady=5
+        style_frame = tk.Frame(tab)
+        for value in config.font_styles:
+            label = translate_enum("font_style", value)
+            tk.Radiobutton(
+                style_frame,
+                text=label,
+                variable=self.font_style_var,
+                value=label,
+            ).pack(side=tk.LEFT, padx=2)
+        style_frame.grid(row=3, column=1, columnspan=3, sticky="w", padx=5)
+
+        tk.Label(tab, text=tr("text.offset_up")).grid(
+            row=4, column=0, sticky="w", pady=5
+        )
+        tk.Entry(tab, textvariable=self.offset_up_var, width=12).grid(
+            row=4, column=1, sticky="w", padx=5, pady=5
         )
 
-        ttk.Label(tab, text=tr("text.offset_left")).grid(
-            row=3, column=2, sticky="w", padx=(16, 0), pady=5
-        )
-        ttk.Entry(tab, textvariable=self.offset_left_var, width=12).grid(
-            row=3, column=3, sticky="w", padx=5, pady=5
-        )
-
-        ttk.Label(tab, text=tr("text.font")).grid(row=4, column=0, sticky="w", pady=5)
-        # Do not enumerate every installed font while the window is being
-        # built. The list is filled lazily when the dropdown is opened.
-        self.font_family_combo = ttk.Combobox(
-            tab,
-            textvariable=self.font_family_var,
-            values=[],
-            width=22,
-            postcommand=self._refresh_font_families,
-        )
-        self.font_family_combo.grid(row=4, column=1, sticky="ew", padx=5, pady=5)
-
-        ttk.Label(tab, text=tr("text.font_size")).grid(
+        tk.Label(tab, text=tr("text.offset_left")).grid(
             row=4, column=2, sticky="w", padx=(16, 0), pady=5
         )
-        ttk.Spinbox(
+        tk.Entry(tab, textvariable=self.offset_left_var, width=12).grid(
+            row=4, column=3, sticky="w", padx=5, pady=5
+        )
+
+        tk.Label(tab, text=tr("text.font")).grid(row=5, column=0, sticky="w", pady=5)
+        self.font_family_combo = FontFamilySelector(
+            tab,
+            self.font_family_var,
+            self._system_font_families,
+        )
+        self.font_family_combo.grid(row=5, column=1, sticky="ew", padx=5, pady=5)
+
+        tk.Label(tab, text=tr("text.font_size")).grid(
+            row=5, column=2, sticky="w", padx=(16, 0), pady=5
+        )
+        tk.Spinbox(
             tab,
             from_=config.min_font_size,
             to=config.max_font_size,
             textvariable=self.font_size_var,
             width=12,
-        ).grid(row=4, column=3, sticky="w", padx=5, pady=5)
-
-        ttk.Label(tab, text=tr("text.font_file")).grid(
-            row=5, column=0, sticky="w", pady=5
-        )
-        self.font_file_label = ttk.Label(tab, text=tr("text.system_default"), width=22)
-        self.font_file_label.grid(row=5, column=1, sticky="w", padx=5, pady=5)
-        ttk.Button(tab, text=tr("text.select_font"), command=self.choose_font).grid(
-            row=5, column=2, sticky="w", padx=(16, 0), pady=5
-        )
-        ttk.Button(
-            tab, text=tr("text.use_system_font"), command=self.use_system_font
         ).grid(row=5, column=3, sticky="w", padx=5, pady=5)
 
-        ttk.Label(
+        tk.Label(tab, text=tr("text.font_file")).grid(
+            row=6, column=0, sticky="w", pady=5
+        )
+        self.font_file_label = tk.Label(tab, text=tr("text.system_default"), width=22)
+        self.font_file_label.grid(row=6, column=1, sticky="w", padx=5, pady=5)
+        tk.Button(tab, text=tr("text.select_font"), command=self.choose_font).grid(
+            row=6, column=2, sticky="w", padx=(16, 0), pady=5
+        )
+        tk.Button(
+            tab, text=tr("text.use_system_font"), command=self.use_system_font
+        ).grid(row=6, column=3, sticky="w", padx=5, pady=5)
+
+        tk.Label(
             tab,
             text=tr("text.hint"),
             foreground="#666666",
-        ).grid(row=6, column=0, columnspan=4, sticky="w", pady=(8, 0))
+        ).grid(row=7, column=0, columnspan=4, sticky="w", pady=(8, 0))
 
-    def _create_preview_section(self, parent: ttk.Frame) -> None:
+    def _create_preview_section(self, parent: tk.Frame) -> None:
         """Create the preview panel."""
-        frame = ttk.LabelFrame(parent, text=tr("section.preview"), padding="8")
+        frame = tk.LabelFrame(parent, text=tr("section.preview"), padx=8, pady=8)
         frame.grid(row=1, column=1, sticky="nsew")
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(0, weight=1)
@@ -494,41 +517,43 @@ class ManipulatorApp:
         )
         self.preview_canvas.grid(row=0, column=0, sticky="nsew")
 
-        ttk.Label(frame, textvariable=self.current_name_var, anchor="w").grid(
+        tk.Label(frame, textvariable=self.current_name_var, anchor="w").grid(
             row=1, column=0, sticky="ew", pady=(6, 0)
         )
-        ttk.Label(frame, textvariable=self.output_size_var, anchor="w").grid(
+        tk.Label(frame, textvariable=self.output_size_var, anchor="w").grid(
             row=2, column=0, sticky="ew"
         )
 
-    def _create_output_section(self, parent: ttk.Frame) -> None:
+    def _create_output_section(self, parent: tk.Frame) -> None:
         """Create output folder and format controls."""
-        frame = ttk.LabelFrame(parent, text=tr("section.output"), padding="8")
+        frame = tk.LabelFrame(parent, text=tr("section.output"), padx=8, pady=8)
         frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(8, 0))
         frame.columnconfigure(1, weight=1)
 
-        ttk.Label(frame, text=tr("output.folder")).grid(row=0, column=0, sticky="w")
-        ttk.Entry(frame, textvariable=self.output_dir_var).grid(
+        tk.Label(frame, text=tr("output.folder")).grid(row=0, column=0, sticky="w")
+        tk.Entry(frame, textvariable=self.output_dir_var).grid(
             row=0, column=1, sticky="ew", padx=5
         )
-        ttk.Button(
-            frame, text=tr("output.browse"), command=self.browse_output_dir
-        ).grid(row=0, column=2, padx=(5, 0))
+        tk.Button(frame, text=tr("output.browse"), command=self.browse_output_dir).grid(
+            row=0, column=2, padx=(5, 0)
+        )
 
-        options = ttk.Frame(frame)
+        options = tk.Frame(frame)
         options.grid(row=1, column=0, columnspan=3, sticky="w", pady=(8, 0))
 
-        ttk.Label(options, text=tr("output.format")).pack(side=tk.LEFT)
-        ttk.Combobox(
-            options,
-            textvariable=self.output_format_var,
-            values=list(config.output_formats),
-            state="readonly",
-            width=8,
-        ).pack(side=tk.LEFT, padx=(5, 20))
+        tk.Label(options, text=tr("output.format")).pack(side=tk.LEFT)
+        format_frame = tk.Frame(options)
+        for value in config.output_formats:
+            tk.Radiobutton(
+                format_frame,
+                text=value,
+                variable=self.output_format_var,
+                value=value,
+            ).pack(side=tk.LEFT, padx=2)
+        format_frame.pack(side=tk.LEFT, padx=(5, 20))
 
-        ttk.Label(options, text=tr("output.quality")).pack(side=tk.LEFT)
-        ttk.Spinbox(
+        tk.Label(options, text=tr("output.quality")).pack(side=tk.LEFT)
+        tk.Spinbox(
             options,
             from_=config.min_jpeg_quality,
             to=config.max_jpeg_quality,
@@ -536,18 +561,18 @@ class ManipulatorApp:
             width=6,
         ).pack(side=tk.LEFT, padx=(5, 20))
 
-        ttk.Checkbutton(
+        tk.Checkbutton(
             options,
             text=tr("output.overwrite"),
             variable=self.overwrite_var,
         ).pack(side=tk.LEFT)
 
-    def _create_action_section(self, parent: ttk.Frame) -> None:
+    def _create_action_section(self, parent: tk.Frame) -> None:
         """Create action buttons and the status bar."""
-        actions = ttk.Frame(parent)
+        actions = tk.Frame(parent)
         actions.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(8, 0))
 
-        self.process_button = ttk.Button(
+        self.process_button = tk.Button(
             actions,
             text=tr("action.process_all"),
             command=self.start_processing,
@@ -555,22 +580,23 @@ class ManipulatorApp:
         )
         self.process_button.pack(side=tk.LEFT, padx=(0, 5))
 
-        ttk.Button(
+        tk.Button(
             actions, text=tr("action.refresh_preview"), command=self._refresh_preview
         ).pack(side=tk.LEFT, padx=5)
 
-        ttk.Label(
+        tk.Label(
             actions,
             text=tr("action.hint"),
             foreground="#666666",
         ).pack(side=tk.LEFT, padx=(16, 0))
 
-        ttk.Label(
+        tk.Label(
             parent,
             textvariable=self.status_var,
             relief=tk.SUNKEN,
             anchor="w",
-            padding=(6, 3),
+            padx=6,
+            pady=3,
         ).grid(row=4, column=0, columnspan=2, sticky="ew", pady=(8, 0))
 
     # --- Bindings ---
