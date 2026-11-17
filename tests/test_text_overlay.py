@@ -7,6 +7,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from image_manipulator.config import config
+from image_manipulator import text_overlay
 from image_manipulator.text_overlay import (
     TextOverlay,
     _choose_platform_font,
@@ -252,8 +253,29 @@ class TestFontconfigFaces:
             raise FileNotFoundError("fc-match")
 
         monkeypatch.setattr(subprocess, "run", missing)
+        text_overlay._FONT_CANDIDATE_CACHE.clear()
 
         assert TextOverlay._fontconfig_candidates("DejaVu Sans", "Regular") == []
+
+    def test_repeated_lookups_are_cached(self, tmp_path, monkeypatch):
+        path = tmp_path / "cached.ttf"
+        path.write_bytes(b"font")
+        calls = []
+
+        def fake_run(args, **kwargs):
+            calls.append(args)
+            return SimpleNamespace(
+                stdout=f"{path}\tCached Family\n", returncode=0
+            )
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        text_overlay._FONT_CANDIDATE_CACHE.clear()
+
+        first = TextOverlay._fontconfig_candidates("Cached Family", "Regular")
+        second = TextOverlay._fontconfig_candidates("Cached Family", "Regular")
+
+        assert first == second == [str(path)]
+        assert len(calls) == 2  # two fc-match queries, not four
 
 
 class TestPlatformFontResolution:

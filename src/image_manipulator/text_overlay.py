@@ -39,6 +39,7 @@ _ALLOWED_FONT_SUFFIXES = {
 }
 _FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
 _PLATFORM_FONT_FILES = None
+_FONT_CANDIDATE_CACHE = {}
 _WARNED_UNRESOLVED_FAMILIES = set()
 
 
@@ -306,11 +307,18 @@ class TextOverlay:
         """Find the best face of a family, platform by platform."""
         import subprocess
 
+        cache_key = (family, fc_style)
+        cached = _FONT_CANDIDATE_CACHE.get(cache_key)
+        if cached is not None:
+            return list(cached)
+
         platform_matches = _choose_platform_font(
             _platform_font_files(), family, fc_style
         )
         if platform_matches:
-            return [str(path) for path in platform_matches]
+            candidates = [str(path) for path in platform_matches]
+            _FONT_CANDIDATE_CACHE[cache_key] = candidates
+            return list(candidates)
 
         # Fontconfig style names differ between families (Book, Roman,
         # Oblique), so ask by slant and weight instead of by style name.
@@ -339,6 +347,7 @@ class TextOverlay:
                 )
             except Exception as e:
                 logger.debug(f"fontconfig query failed for {query}: {e}")
+                _FONT_CANDIDATE_CACHE[cache_key] = candidates
                 return candidates
 
             for line in result.stdout.splitlines():
@@ -362,6 +371,7 @@ class TextOverlay:
                     continue
                 seen.add(path)
                 candidates.append(path)
+        _FONT_CANDIDATE_CACHE[cache_key] = candidates
         return candidates
 
     def _font_candidates(self, size: int):
