@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Please add image files first.",
   "dialog.cannot_load.title": "Cannot Load Image",
   "dialog.cannot_load.message": "Failed to load {name}:\n{error}",
+  "dialog.close_running.title": "Processing in progress",
+  "dialog.close_running.message": "A batch is still running. Close the window anyway? The current file may be incomplete and the remaining files will be skipped.",
   "dialog.reset.title": "Reset Settings",
   "dialog.reset.message": "Return all settings to their defaults?\n\nThe saved settings file will be removed.",
   "dialog.overwrite.title": "Overwrite Originals",

@@ -10,6 +10,7 @@ display.
 
 import logging
 import queue
+import threading
 from types import SimpleNamespace
 
 import pytest
@@ -90,7 +91,7 @@ class TestUnexpectedWorkerFailure:
             def process_path(self, *args, **kwargs):
                 raise RuntimeError("boom")
 
-        app = SimpleNamespace(_events=queue.Queue())
+        app = SimpleNamespace(_events=queue.Queue(), _cancel_event=threading.Event())
 
         with caplog.at_level(logging.ERROR, logger=ui.logger.name):
             ui.ManipulatorApp._process_worker(
@@ -111,6 +112,46 @@ class TestUnexpectedWorkerFailure:
         assert "Batch worker stopped early" in caplog.text
 
 
+class TestCloseDuringBatch:
+    @staticmethod
+    def _app():
+        destroyed = []
+
+        class StubRoot:
+            def destroy(self):
+                destroyed.append(True)
+
+        app = SimpleNamespace(
+            _processing=True,
+            _cancel_event=threading.Event(),
+            root=StubRoot(),
+            _cancel_scheduled_preview=lambda: None,
+            _cancel_scheduled_settings_save=lambda: None,
+            _save_settings_now=lambda: None,
+        )
+        return app, destroyed
+
+    def test_cancelled_confirmation_keeps_the_window_open(self, monkeypatch):
+        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **k: False)
+        app, destroyed = self._app()
+
+        ui.ManipulatorApp._on_close(app)
+
+        assert destroyed == []
+        assert app._cancel_event.is_set() is False
+
+    def test_confirmed_close_cancels_the_worker_and_destroys_the_window(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(ui.messagebox, "askyesno", lambda *a, **k: True)
+        app, destroyed = self._app()
+
+        ui.ManipulatorApp._on_close(app)
+
+        assert app._cancel_event.is_set() is True
+        assert destroyed == [True]
+
+
 class TestSecondBatchRun:
     def test_processes_and_reports_completion_every_run(self, tmp_path):
         sources = []
@@ -121,7 +162,7 @@ class TestSecondBatchRun:
         output = tmp_path / "output"
         output.mkdir()
         manipulator = ImageManipulator(target_width=24, target_height=18)
-        app = SimpleNamespace(_events=queue.Queue())
+        app = SimpleNamespace(_events=queue.Queue(), _cancel_event=threading.Event())
 
         for _ in range(2):
             ui.ManipulatorApp._process_worker(

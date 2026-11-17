@@ -77,6 +77,7 @@ class ManipulatorApp:
         self._preview_after_id: Optional[str] = None
         self._save_after_id: Optional[str] = None
         self._processing = False
+        self._cancel_event = threading.Event()
         self._applying_preset = False
         self._update_check_running = False
         self._events: queue.Queue = queue.Queue()
@@ -1033,6 +1034,7 @@ class ManipulatorApp:
         paths = list(self.image_paths)
 
         self._processing = True
+        self._cancel_event.clear()
         self.process_button.config(state="disabled")
         self.status_var.set(tr("status.processing"))
 
@@ -1056,6 +1058,8 @@ class ManipulatorApp:
 
         try:
             for index, path in enumerate(paths, start=1):
+                if self._cancel_event.is_set():
+                    break
                 self._events.put(
                     (
                         "status",
@@ -1245,6 +1249,14 @@ class ManipulatorApp:
 
     def _on_close(self) -> None:
         """Flush pending settings and close the window."""
+        if self._processing:
+            if not messagebox.askyesno(
+                tr("dialog.close_running.title"),
+                tr("dialog.close_running.message"),
+                parent=self.root,
+            ):
+                return
+            self._cancel_event.set()
         self._cancel_scheduled_preview()
         self._cancel_scheduled_settings_save()
         self._save_settings_now()

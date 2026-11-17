@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Fügen Sie zuerst Bilddateien hinzu.",
   "dialog.cannot_load.title": "Bild kann nicht geladen werden",
   "dialog.cannot_load.message": "{name} konnte nicht geladen werden:\n{error}",
+  "dialog.close_running.title": "Verarbeitung läuft",
+  "dialog.close_running.message": "Der Stapel wird noch verarbeitet. Fenster trotzdem schließen? Die aktuelle Datei kann unvollständig sein und die übrigen werden übersprungen.",
   "dialog.reset.title": "Einstellungen zurücksetzen",
   "dialog.reset.message": "Alle Einstellungen auf ihre Standardwerte zurücksetzen?\n\nDie gespeicherte Einstellungsdatei wird entfernt.",
   "dialog.overwrite.title": "Originale überschreiben",

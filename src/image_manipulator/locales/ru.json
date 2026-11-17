@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Сначала добавьте изображения.",
   "dialog.cannot_load.title": "Не удалось загрузить изображение",
   "dialog.cannot_load.message": "Не удалось загрузить {name}:\n{error}",
+  "dialog.close_running.title": "Идёт обработка",
+  "dialog.close_running.message": "Пакетная обработка ещё выполняется. Закрыть окно? Текущий файл может быть недописан, а остальные будут пропущены.",
   "dialog.reset.title": "Сброс настроек",
   "dialog.reset.message": "Вернуть все настройки к значениям по умолчанию?\n\nСохранённый файл настроек будет удалён.",
   "dialog.overwrite.title": "Перезапись оригиналов",

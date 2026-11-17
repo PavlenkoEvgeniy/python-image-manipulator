@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "先に画像ファイルを追加してください。",
   "dialog.cannot_load.title": "画像を読み込めません",
   "dialog.cannot_load.message": "{name} を読み込めませんでした:\n{error}",
+  "dialog.close_running.title": "処理中です",
+  "dialog.close_running.message": "バッチ処理はまだ実行中です。それでもウィンドウを閉じますか？現在のファイルが不完全になり、残りはスキップされます。",
   "dialog.reset.title": "設定をリセット",
   "dialog.reset.message": "すべての設定を既定値に戻しますか？\n\n保存された設定ファイルは削除されます。",
   "dialog.overwrite.title": "元のファイルを上書き",

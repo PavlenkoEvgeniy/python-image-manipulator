@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Lütfen önce resim dosyaları ekleyin.",
   "dialog.cannot_load.title": "Resim Yüklenemiyor",
   "dialog.cannot_load.message": "{name} yüklenemedi:\n{error}",
+  "dialog.close_running.title": "İşlem sürüyor",
+  "dialog.close_running.message": "Toplu işlem hâlâ çalışıyor. Yine de pencere kapatılsın mı? Geçerli dosya eksik kalabilir ve kalanlar atlanır.",
   "dialog.reset.title": "Ayarları Sıfırla",
   "dialog.reset.message": "Tüm ayarlar varsayılanlarına döndürülsün mü?\n\nKayıtlı ayar dosyası silinecek.",
   "dialog.overwrite.title": "Özgün Dosyaların Üzerine Yaz",

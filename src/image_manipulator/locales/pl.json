@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Najpierw dodaj pliki graficzne.",
   "dialog.cannot_load.title": "Nie można wczytać obrazu",
   "dialog.cannot_load.message": "Nie udało się wczytać {name}:\n{error}",
+  "dialog.close_running.title": "Przetwarzanie w toku",
+  "dialog.close_running.message": "Partia jest jeszcze przetwarzana. Zamknąć okno mimo to? Bieżący plik może być niekompletny, a pozostałe zostaną pominięte.",
   "dialog.reset.title": "Przywróć ustawienia",
   "dialog.reset.message": "Przywrócić wszystkie ustawienia do wartości domyślnych?\n\nZapisany plik ustawień zostanie usunięty.",
   "dialog.overwrite.title": "Nadpisz oryginały",

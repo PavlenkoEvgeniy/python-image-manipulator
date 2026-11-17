@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "请先添加图片文件。",
   "dialog.cannot_load.title": "无法加载图片",
   "dialog.cannot_load.message": "无法加载 {name}：\n{error}",
+  "dialog.close_running.title": "正在处理",
+  "dialog.close_running.message": "批处理仍在运行。仍要关闭窗口吗？当前文件可能不完整，其余文件将被跳过。",
   "dialog.reset.title": "重置设置",
   "dialog.reset.message": "将所有设置恢复为默认值？\n\n已保存的设置文件将被删除。",
   "dialog.overwrite.title": "覆盖原始文件",

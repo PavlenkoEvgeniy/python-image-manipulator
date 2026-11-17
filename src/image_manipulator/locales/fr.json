@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Ajoutez d'abord des fichiers image.",
   "dialog.cannot_load.title": "Impossible de charger l'image",
   "dialog.cannot_load.message": "Impossible de charger {name} :\n{error}",
+  "dialog.close_running.title": "Traitement en cours",
+  "dialog.close_running.message": "Le lot est encore en cours. Fermer la fenêtre quand même ? Le fichier actuel peut être incomplet et les autres seront ignorés.",
   "dialog.reset.title": "Réinitialiser les paramètres",
   "dialog.reset.message": "Rétablir tous les paramètres par défaut ?\n\nLe fichier de paramètres enregistré sera supprimé.",
   "dialog.overwrite.title": "Écraser les originaux",

@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Silakan tambahkan berkas gambar terlebih dahulu.",
   "dialog.cannot_load.title": "Tidak Dapat Memuat Gambar",
   "dialog.cannot_load.message": "Gagal memuat {name}:\n{error}",
+  "dialog.close_running.title": "Pemrosesan berlangsung",
+  "dialog.close_running.message": "Batch masih berjalan. Tetap tutup jendela? File saat ini mungkin tidak lengkap dan sisanya akan dilewati.",
   "dialog.reset.title": "Atur Ulang Pengaturan",
   "dialog.reset.message": "Kembalikan semua pengaturan ke nilai bawaan?\n\nBerkas pengaturan yang tersimpan akan dihapus.",
   "dialog.overwrite.title": "Timpa Berkas Asli",

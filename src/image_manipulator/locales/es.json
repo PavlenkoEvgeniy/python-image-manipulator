@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Añade primero archivos de imagen.",
   "dialog.cannot_load.title": "No se puede cargar la imagen",
   "dialog.cannot_load.message": "No se pudo cargar {name}:\n{error}",
+  "dialog.close_running.title": "Procesamiento en curso",
+  "dialog.close_running.message": "El lote aún se está ejecutando. ¿Cerrar la ventana de todos modos? El archivo actual puede quedar incompleto y se omitirán los demás.",
   "dialog.reset.title": "Restablecer ajustes",
   "dialog.reset.message": "¿Restablecer todos los ajustes a sus valores predeterminados?\n\nSe eliminará el archivo de ajustes guardado.",
   "dialog.overwrite.title": "Sobrescribir originales",

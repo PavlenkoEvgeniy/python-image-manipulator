@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Aggiungi prima dei file immagine.",
   "dialog.cannot_load.title": "Impossibile caricare l'immagine",
   "dialog.cannot_load.message": "Impossibile caricare {name}:\n{error}",
+  "dialog.close_running.title": "Elaborazione in corso",
+  "dialog.close_running.message": "Il batch è ancora in esecuzione. Chiudere comunque la finestra? Il file corrente potrebbe essere incompleto e gli altri verranno saltati.",
   "dialog.reset.title": "Ripristina impostazioni",
   "dialog.reset.message": "Ripristinare tutte le impostazioni ai valori predefiniti?\n\nIl file delle impostazioni salvato verrà rimosso.",
   "dialog.overwrite.title": "Sovrascrivi gli originali",

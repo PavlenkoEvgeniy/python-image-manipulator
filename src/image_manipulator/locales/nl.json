@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Voeg eerst afbeeldingsbestanden toe.",
   "dialog.cannot_load.title": "Afbeelding kan niet worden geladen",
   "dialog.cannot_load.message": "Kan {name} niet laden:\n{error}",
+  "dialog.close_running.title": "Verwerking bezig",
+  "dialog.close_running.message": "De batch wordt nog uitgevoerd. Venster toch sluiten? Het huidige bestand kan onvolledig zijn en de rest wordt overgeslagen.",
   "dialog.reset.title": "Instellingen herstellen",
   "dialog.reset.message": "Alle instellingen terugzetten naar de standaardwaarden?\n\nHet opgeslagen instellingenbestand wordt verwijderd.",
   "dialog.overwrite.title": "Originele bestanden overschrijven",

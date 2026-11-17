@@ -92,6 +92,8 @@
   "dialog.no_images_for_processing.message": "Спочатку додайте файли зображень.",
   "dialog.cannot_load.title": "Не вдалося завантажити зображення",
   "dialog.cannot_load.message": "Не вдалося завантажити {name}:\n{error}",
+  "dialog.close_running.title": "Триває обробка",
+  "dialog.close_running.message": "Пакетна обробка ще виконується. Закрити вікно? Поточний файл може бути неповним, а решту буде пропущено.",
   "dialog.reset.title": "Скинути налаштування",
   "dialog.reset.message": "Повернути всі налаштування до типових?\n\nЗбережений файл налаштувань буде видалено.",
   "dialog.overwrite.title": "Перезапис оригіналів",
