@@ -415,25 +415,34 @@ class TextOverlay:
         return last if last is not None else _default_font(size)
 
     @staticmethod
-    def _renders_text(font: FontType, text: str) -> bool:
-        """Check that the font draws at least one visible pixel for the text."""
+    def _glyph_signature(font: FontType, character: str):
+        """Return the size and pixels of one rendered glyph."""
+        mask = font.getmask(character)
+        return mask.size, bytes(mask)
+
+    @classmethod
+    def _renders_text(cls, font: FontType, text: str) -> bool:
+        """Check that every non-space character has a real glyph.
+
+        FreeType draws the ``.notdef`` box for missing characters, which is
+        not empty. Comparing each glyph with U+FFFF (an unassigned codepoint
+        that always maps to ``.notdef``) distinguishes real glyphs from tofu.
+        """
         if not text.strip():
             return True
 
         try:
-            left, top, right, bottom = font.getbbox(text)
+            notdef = cls._glyph_signature(font, "\uffff")
+            for character in text:
+                if character.isspace():
+                    continue
+                if cls._glyph_signature(font, character) == notdef:
+                    return False
         except Exception:
+            # Keep the historical optimistic behavior for exotic font
+            # objects; drawing will still surface a real error.
             return True
-
-        layer = Image.new(
-            "RGBA",
-            (max(1, right - left + 4), max(1, bottom - top + 4)),
-            (0, 0, 0, 0),
-        )
-        draw = ImageDraw.Draw(layer)
-        draw.text((2 - left, 2 - top), text, fill=(255, 255, 255, 255), font=font)
-        _, max_alpha = layer.getchannel("A").getextrema()
-        return max_alpha > 0
+        return True
 
     # --- Text metrics and placement ---
 

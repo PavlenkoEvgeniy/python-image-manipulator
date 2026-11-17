@@ -187,6 +187,17 @@ class TestFontResolution:
 
         assert overlay._renders_text(font, "   ") is True
 
+    def test_missing_glyphs_are_rejected_as_tofu(self):
+        overlay = TextOverlay(font_size=20)
+        font = overlay.get_font(20)
+        try:
+            font.getmask("\ue000")
+        except Exception as exc:
+            pytest.skip(f"this font cannot be probed: {exc}")
+
+        assert overlay._renders_text(font, "\ue000") is False
+        assert overlay._renders_text(font, "Hello") is True
+
 
 class TestFontconfigFaces:
     """fc-match gives the requested style without condensed look-alikes."""
