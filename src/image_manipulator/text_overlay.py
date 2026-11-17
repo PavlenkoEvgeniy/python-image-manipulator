@@ -123,38 +123,60 @@ class TextOverlay:
 
     @staticmethod
     def _fontconfig_candidates(family: str, fc_style: str) -> list:
-        """Query fontconfig for font files of a family, best style first."""
+        """Ask fontconfig for the best face of a family, best style first."""
         import subprocess
 
-        try:
-            result = subprocess.run(
-                ["fc-list", f":family={family}"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-        except Exception as e:
-            logger.debug(f"fontconfig query failed for {family}: {e}")
-            return []
+        # Fontconfig style names differ between families (Book, Roman,
+        # Oblique), so ask by slant and weight instead of by style name.
+        # fc-match also avoids condensed variants unless they are the best
+        # match for the family.
+        slant_weight = {
+            "Regular": "slant=roman:weight=regular",
+            "Bold": "slant=roman:weight=bold",
+            "Italic": "slant=italic:weight=regular",
+            "Bold Italic": "slant=italic:weight=bold",
+        }.get(fc_style)
+        queries = (
+            (f"{family}:{slant_weight}", family)
+            if slant_weight
+            else (family,)
+        )
+        candidates = []
+        seen = set()
+        for query in queries:
+            try:
+                result = subprocess.run(
+                    ["fc-match", "-f", "%{file}\t%{family}\n", query],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+            except Exception as e:
+                logger.debug(f"fontconfig query failed for {query}: {e}")
+                return candidates
 
-        exact, regular, others = [], [], []
-        for line in result.stdout.splitlines():
-            path, _, meta = line.partition(":")
-            path = path.strip()
-            if not path or not os.path.exists(path):
-                continue
-            styles = (
-                [s.strip().lower() for s in meta.split("style=")[-1].split(",")]
-                if "style=" in meta
-                else []
-            )
-            if fc_style.lower() in styles:
-                exact.append(path)
-            elif "regular" in styles:
-                regular.append(path)
-            else:
-                others.append(path)
-        return exact + regular + others
+            for line in result.stdout.splitlines():
+                path, _, found_families = line.partition("\t")
+                path = path.strip()
+                families = [
+                    name.strip().lower()
+                    for name in found_families.split(",")
+                    if name.strip()
+                ]
+                if not path or path in seen:
+                    continue
+                if families and family.lower() not in families:
+                    continue
+                filename = os.path.basename(path).lower()
+                if (
+                    "condensed" in filename or "narrow" in filename
+                ) and "condensed" not in family.lower() and "narrow" not in family.lower():
+                    continue
+                if not os.path.exists(path):
+                    continue
+                seen.add(path)
+                candidates.append(path)
+        return candidates
 
     def _font_candidates(self, size: int):
         """Yield loadable fonts in priority order.

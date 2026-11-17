@@ -1,5 +1,8 @@
 """Tests for the text overlay logic."""
 
+import subprocess
+from types import SimpleNamespace
+
 import pytest
 from PIL import Image, ImageDraw
 
@@ -179,6 +182,63 @@ class TestFontResolution:
         font = overlay.get_font(20)
 
         assert overlay._renders_text(font, "   ") is True
+
+
+class TestFontconfigFaces:
+    """fc-match gives the requested style without condensed look-alikes."""
+
+    def test_exact_style_comes_first_and_foreign_families_are_ignored(
+        self, tmp_path, monkeypatch
+    ):
+        oblique = tmp_path / "oblique.ttf"
+        foreign = tmp_path / "foreign.ttf"
+        for path in (oblique, foreign):
+            path.write_bytes(b"font")
+
+        def fake_run(args, **kwargs):
+            query = args[-1]
+            if "slant=italic" in query:
+                output = f"{oblique}\tDejaVu Sans\n"
+            else:
+                output = (
+                    f"{oblique}\tDejaVu Sans\n"
+                    f"{foreign}\tOther Family\n"
+                )
+            return SimpleNamespace(stdout=output, returncode=0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+
+        candidates = TextOverlay._fontconfig_candidates("DejaVu Sans", "Italic")
+
+        assert candidates == [str(oblique)]
+
+    def test_condensed_variants_are_ignored(self, tmp_path, monkeypatch):
+        regular = tmp_path / "regular.ttf"
+        condensed = tmp_path / "condensed.ttf"
+        for path in (regular, condensed):
+            path.write_bytes(b"font")
+
+        def fake_run(args, **kwargs):
+            query = args[-1]
+            if "slant=roman" in query:
+                output = f"{regular}\tDejaVu Sans\n"
+            else:
+                output = f"{condensed}\tDejaVu Sans,DejaVu Sans Condensed\n"
+            return SimpleNamespace(stdout=output, returncode=0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+
+        candidates = TextOverlay._fontconfig_candidates("DejaVu Sans", "Regular")
+
+        assert candidates == [str(regular)]
+
+    def test_missing_fc_match_returns_no_candidates(self, monkeypatch):
+        def missing(*args, **kwargs):
+            raise FileNotFoundError("fc-match")
+
+        monkeypatch.setattr(subprocess, "run", missing)
+
+        assert TextOverlay._fontconfig_candidates("DejaVu Sans", "Regular") == []
 
 
 class TestMeasurementFallback:
