@@ -6,7 +6,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, Union, cast
 
 from PIL import Image, ImageOps
 
@@ -50,7 +50,7 @@ def _normalize_high_depth(image: Image.Image) -> Image.Image:
     """
     mode = image.mode
     if mode == "F":
-        low, high = image.getextrema()
+        low, high = cast(tuple[float, float], image.getextrema())
         if low >= 0.0 and high <= 1.0:
             scaled = image.point(lambda value: value * 255.0)
         elif high > low:
@@ -68,7 +68,7 @@ def _normalize_high_depth(image: Image.Image) -> Image.Image:
             .convert("RGB")
         )
 
-    low, high = image.getextrema()
+    low, high = cast(tuple[float, float], image.getextrema())
     if high <= low:
         return image.convert("L").convert("RGB")
     scale = 255.0 / (high - low)
@@ -99,7 +99,7 @@ def _normalize_mode(image: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
-def load_image(path) -> tuple[Image.Image, Optional[bytes]]:
+def load_image(path: Union[str, Path]) -> tuple[Image.Image, Optional[bytes]]:
     """Load an image with its display orientation baked into the pixels.
 
     Viewers display an image according to its EXIF Orientation tag, which may
@@ -142,7 +142,7 @@ def _to_gif_palette(image: Image.Image) -> Image.Image:
     if len(colors) < 768:
         colors.extend([0] * (768 - len(colors)))
         palette.putpalette(colors)
-    if alpha.getextrema()[0] < 255:
+    if cast(tuple[int, int], alpha.getextrema())[0] < 255:
         transparent = alpha.point(lambda value: 255 if value == 0 else 0)
         palette.paste(255, mask=transparent)
         palette.info["transparency"] = 255
@@ -172,7 +172,7 @@ def _prepare_for_save(image: Image.Image, pil_format: str) -> Image.Image:
 
 def save_image(
     image: Image.Image,
-    path,
+    path: Union[str, Path],
     pil_format: str,
     jpeg_quality: int = 95,
     icc_profile: Optional[bytes] = None,
@@ -188,7 +188,7 @@ def save_image(
     """
     prepared = _prepare_for_save(image, pil_format)
 
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
     if pil_format == "JPEG":
         kwargs["quality"] = jpeg_quality
         kwargs["optimize"] = True
@@ -282,8 +282,9 @@ class ImageManipulator:
             self.target_height,
             self.maintain_aspect,
         )
-        if self.has_text():
-            overlaid = self.text_overlay.apply_text(result)
+        overlay = self.text_overlay
+        if overlay is not None and self.has_text():
+            overlaid = overlay.apply_text(result)
             if overlaid is not None:
                 result = overlaid
         return result
@@ -291,7 +292,7 @@ class ImageManipulator:
     def resolve_output_path(
         self,
         input_path: Path,
-        output_dir,
+        output_dir: Union[str, Path],
         rendered: Image.Image,
         overwrite: bool,
     ) -> tuple[Path, str]:
@@ -338,8 +339,8 @@ class ImageManipulator:
 
     def process_path(
         self,
-        input_path,
-        output_dir,
+        input_path: Union[str, Path],
+        output_dir: Union[str, Path],
         overwrite: bool = False,
     ) -> ProcessResult:
         """Load, resize, overlay text and save one image.

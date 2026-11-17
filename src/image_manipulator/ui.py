@@ -84,7 +84,7 @@ class ManipulatorApp:
         self._resetting = False
         self._update_check_running = False
         self._events: queue.Queue = queue.Queue()
-        self._window_icon = None
+        self._window_icon: Optional[ImageTk.PhotoImage] = None
 
         self._setup_window()
         self._set_window_icon()
@@ -117,8 +117,9 @@ class ManipulatorApp:
         try:
             from .icon import load_icon_image
 
-            self._window_icon = ImageTk.PhotoImage(load_icon_image())
-            self.root.iconphoto(True, self._window_icon)
+            photo = ImageTk.PhotoImage(load_icon_image())
+            self._window_icon = photo
+            self.root.iconphoto(True, photo)  # type: ignore[arg-type]
         except Exception as e:
             logger.warning(f"Could not set the window icon: {e}")
 
@@ -720,7 +721,7 @@ class ManipulatorApp:
             anchor=tk.CENTER,
         )
         # Keep a reference so Tk does not garbage-collect the image.
-        self.preview_canvas.image = photo
+        self.preview_canvas.image = photo  # type: ignore[attr-defined]
 
     # --- Image list ---
 

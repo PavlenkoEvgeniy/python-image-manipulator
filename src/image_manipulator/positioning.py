@@ -1,7 +1,9 @@
 """Window positioning helpers shared by the main window and dialogs."""
 
 import tkinter as tk
-from typing import Optional
+from typing import Optional, Union
+
+Window = Union[tk.Tk, tk.Toplevel]
 
 
 def centered_origin(
@@ -40,7 +42,7 @@ def detect_monitors() -> list[tuple[int, int, int, int]]:
 
 
 def center_on_screen(
-    window: tk.Wm,
+    window: Window,
     width: int,
     height: int,
     monitors: Optional[list[tuple[int, int, int, int]]] = None,
@@ -74,8 +76,8 @@ def center_on_screen(
 
 def center_over_parent(
     *,
-    window: tk.Wm,
-    parent: tk.Wm,
+    window: Window,
+    parent: Window,
     width: Optional[int] = None,
     height: Optional[int] = None,
 ) -> None:
@@ -94,7 +96,7 @@ def center_over_parent(
     _align_client(window, x, y, w, h)
 
 
-def _align_client(window: tk.Wm, x: int, y: int, width: int, height: int) -> None:
+def _align_client(window: Window, x: int, y: int, width: int, height: int) -> None:
     """Correct for window managers that position the frame, not the client."""
     window.update()
     if not window.winfo_ismapped():

@@ -4,7 +4,7 @@ import logging
 import tkinter as tk
 import webbrowser
 from tkinter import ttk
-from typing import ClassVar
+from typing import ClassVar, Union
 
 from PIL import ImageTk
 
@@ -15,13 +15,15 @@ from .icon import load_icon_image
 from .positioning import center_over_parent
 from .uifonts import ui_font
 
+Window = Union[tk.Tk, tk.Toplevel]
+
 logger = logging.getLogger(__name__)
 
 
 class AboutDialog:
     """About dialog window."""
 
-    def __init__(self, parent: tk.Wm):
+    def __init__(self, parent: Window):
         """Create the about dialog.
 
         Args:
@@ -53,7 +55,7 @@ class AboutDialog:
             # only by them is destroyed by garbage collection: Tk deletes the
             # image while the label keeps its size, leaving blank space.
             logo = tk.Label(frame, image=photo, borderwidth=0)
-            logo.image = photo
+            logo.image = photo  # type: ignore[attr-defined]
             logo.pack(pady=(0, 4))
         except Exception as exc:
             logger.warning("Could not load the About dialog icon: %s", exc)
@@ -95,7 +97,7 @@ class AboutDialog:
 class UpdateDialog:
     """Offer a direct download link for a newer release."""
 
-    def __init__(self, parent: tk.Wm, info) -> None:
+    def __init__(self, parent: Window, info) -> None:
         """Create the update dialog.
 
         Args:
@@ -166,7 +168,7 @@ class MessageDialog:
         "info": ("ℹ", "#1b6ec2"),  # noqa: RUF001 - intentional info glyph
     }
 
-    def __init__(self, parent: tk.Wm, level: str, title: str, message: str):
+    def __init__(self, parent: Window, level: str, title: str, message: str):
         """Create the message dialog.
 
         Args:
@@ -221,16 +223,16 @@ class ErrorDialog:
     """Helper class for showing message dialogs centered over the main window."""
 
     @staticmethod
-    def show_error(title: str, message: str, parent: tk.Wm) -> None:
+    def show_error(title: str, message: str, parent: Window) -> None:
         """Show an error message box."""
         MessageDialog(parent, "error", title, message)
 
     @staticmethod
-    def show_warning(title: str, message: str, parent: tk.Wm) -> None:
+    def show_warning(title: str, message: str, parent: Window) -> None:
         """Show a warning message box."""
         MessageDialog(parent, "warning", title, message)
 
     @staticmethod
-    def show_info(title: str, message: str, parent: tk.Wm) -> None:
+    def show_info(title: str, message: str, parent: Window) -> None:
         """Show an info message box."""
         MessageDialog(parent, "info", title, message)

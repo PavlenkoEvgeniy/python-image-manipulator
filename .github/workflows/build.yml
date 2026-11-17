@@ -39,6 +39,9 @@ jobs:
           ruff check src tests tools main.py --output-format=github
           ruff format --check src tests tools main.py
 
+      - name: Run mypy
+        run: mypy src
+
       - name: Run tests
         run: python -m pytest -v
 

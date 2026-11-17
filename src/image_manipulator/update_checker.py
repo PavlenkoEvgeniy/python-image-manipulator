@@ -13,7 +13,7 @@ import shutil
 import sys
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from . import __version__
 
@@ -88,7 +88,7 @@ def platform_asset_key(platform: Optional[str] = None) -> str:
 
 def linux_package_kind(
     os_release: str = "/etc/os-release",
-    which=shutil.which,
+    which: Callable[[str], Optional[str]] = shutil.which,
 ) -> str:
     """Return ``deb`` or ``rpm`` for the running Linux distribution."""
     identifiers = set()

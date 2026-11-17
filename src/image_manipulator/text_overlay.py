@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
 from typing import ClassVar, Optional, Union
@@ -38,9 +39,9 @@ _ALLOWED_FONT_SUFFIXES = {
     "thin",
 }
 _FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
-_PLATFORM_FONT_FILES = None
-_FONT_CANDIDATE_CACHE = {}
-_WARNED_UNRESOLVED_FAMILIES = set()
+_PLATFORM_FONT_FILES: Optional[list[tuple[str, Path]]] = None
+_FONT_CANDIDATE_CACHE: dict[tuple[str, str], list[str]] = {}
+_WARNED_UNRESOLVED_FAMILIES: set[str] = set()
 
 
 def _normalize_font_text(value: str) -> str:
@@ -119,21 +120,23 @@ def _windows_font_files() -> list[tuple[str, Path]]:
     entries = []
     keys = (
         (
-            winreg.HKEY_LOCAL_MACHINE,
+            winreg.HKEY_LOCAL_MACHINE,  # type: ignore[attr-defined]
             r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
         ),
         (
-            winreg.HKEY_CURRENT_USER,
+            winreg.HKEY_CURRENT_USER,  # type: ignore[attr-defined]
             r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts",
         ),
     )
     for hive, key_name in keys:
         try:
-            with winreg.OpenKey(hive, key_name) as key:
+            with winreg.OpenKey(hive, key_name) as key:  # type: ignore[attr-defined]
                 index = 0
                 while True:
                     try:
-                        name, value, _ = winreg.EnumValue(key, index)
+                        name, value, _ = winreg.EnumValue(  # type: ignore[attr-defined]
+                            key, index
+                        )
                     except OSError:
                         break
                     index += 1
@@ -271,7 +274,7 @@ class TextOverlay:
     # --- Font resolution ---
 
     @staticmethod
-    def _try_load_font(name, size: int) -> Optional[FontType]:
+    def _try_load_font(name: Union[str, Path], size: int) -> Optional[FontType]:
         """Load a font file, returning None when the path cannot be opened."""
         try:
             return ImageFont.truetype(name, size)
@@ -309,7 +312,7 @@ class TextOverlay:
         return None
 
     @staticmethod
-    def _fontconfig_candidates(family: str, fc_style: str) -> list:
+    def _fontconfig_candidates(family: str, fc_style: str) -> list[str]:
         """Find the best face of a family, platform by platform."""
         import subprocess
 
@@ -378,7 +381,7 @@ class TextOverlay:
         _FONT_CANDIDATE_CACHE[cache_key] = candidates
         return candidates
 
-    def _font_candidates(self, size: int):
+    def _font_candidates(self, size: int) -> Iterator[FontType]:
         """Yield loadable fonts in priority order.
 
         A custom font file comes first, then the selected system family, then
@@ -386,23 +389,23 @@ class TextOverlay:
         """
         if self.font_path and os.path.exists(self.font_path):
             try:
-                font = ImageFont.truetype(self.font_path, size)
+                custom_font = ImageFont.truetype(self.font_path, size)
             except Exception as e:
                 logger.warning(
                     f"Failed to load custom font {self.font_path}: {e}. Using fallback."
                 )
             else:
                 logger.debug(f"Loaded custom font: {self.font_path}")
-                yield font
+                yield custom_font
 
-        font = self._load_system_font(size)
-        if font is not None:
-            yield font
+        system_font = self._load_system_font(size)
+        if system_font is not None:
+            yield system_font
 
         for font_name in config.system_fonts:
-            font = self._try_load_font(font_name, size)
-            if font is not None:
-                yield font
+            fallback_font = self._try_load_font(font_name, size)
+            if fallback_font is not None:
+                yield fallback_font
 
         logger.info("Using default PIL font")
         yield _default_font(size)
@@ -429,7 +432,9 @@ class TextOverlay:
         return last if last is not None else _default_font(size)
 
     @staticmethod
-    def _glyph_signature(font: FontType, character: str):
+    def _glyph_signature(
+        font: FontType, character: str
+    ) -> tuple[tuple[int, int], bytes]:
         """Return the size and pixels of one rendered glyph."""
         mask = font.getmask(character)
         return mask.size, bytes(mask)

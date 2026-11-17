@@ -122,10 +122,7 @@ def get_app_dir() -> str:
 
 def resource_path(relative_path: str) -> str:
     """Get an absolute path to a resource (works with PyInstaller)."""
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
+    base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
     return os.path.join(base_path, relative_path)
 
 

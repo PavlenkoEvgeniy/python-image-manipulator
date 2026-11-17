@@ -1,11 +1,12 @@
-.PHONY: help test lint format quality install-dev run pyinstaller clean
+.PHONY: help test lint format typecheck quality install-dev run pyinstaller clean
 
 help:
 	@echo "Available targets:"
 	@echo "  make test         - Run tests"
 	@echo "  make lint         - Run Ruff lint checks"
 	@echo "  make format       - Format the code with Ruff"
-	@echo "  make quality      - Run lint, format check, and tests"
+	@echo "  make typecheck    - Run mypy on the source tree"
+	@echo "  make quality      - Run lint, format check, mypy, and tests"
 	@echo "  make install-dev  - Install in development mode with test dependencies"
 	@echo "  make run          - Run the application from source"
 	@echo "  make pyinstaller  - Build a standalone executable"
@@ -20,8 +21,12 @@ lint:
 format:
 	ruff format src tests tools main.py
 
+typecheck:
+	mypy src
+
 quality: lint
 	ruff format --check src tests tools main.py
+	mypy src
 	python -m pytest -q
 
 install-dev:

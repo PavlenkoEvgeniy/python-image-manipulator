@@ -12,7 +12,7 @@ def setup_logging(level: int = logging.INFO, log_file: Optional[str] = None) -> 
         level: Logging level (default: INFO).
         log_file: Optional log file path.
     """
-    handlers = [logging.StreamHandler(sys.stdout)]
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
 
     if log_file:
         handlers.append(logging.FileHandler(log_file))
