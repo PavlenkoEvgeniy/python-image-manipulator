@@ -1,7 +1,6 @@
 """Pure resizing logic: target dimensions and pixel resampling."""
 
 from enum import Enum
-from typing import Tuple
 
 from PIL import Image
 
@@ -36,7 +35,7 @@ def calculate_dimensions(
     target_width: int,
     target_height: int,
     maintain_aspect: bool = True,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Calculate the final pixel size of a resized image.
 
     With ``maintain_aspect`` the image is scaled to fit inside the target box

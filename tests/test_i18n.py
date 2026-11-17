@@ -28,9 +28,7 @@ EXPECTED_CODES = [
 def _placeholders(text: str) -> set:
     """Names of the ``{placeholder}`` fields used by a message."""
     return {
-        field
-        for _, field, _, _ in string.Formatter().parse(text)
-        if field is not None
+        field for _, field, _, _ in string.Formatter().parse(text) if field is not None
     }
 
 

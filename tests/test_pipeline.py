@@ -15,7 +15,6 @@ from image_manipulator.pipeline import (
 from image_manipulator.resize import OutputFormat
 from image_manipulator.text_overlay import TextOverlay
 
-
 # EXIF orientation tag id
 ORIENTATION_TAG = 0x0112
 
@@ -40,9 +39,10 @@ class TestRender:
 
         assert result.size == (200, 100)
         # Text is present on the resized result
-        assert result.tobytes() != image.resize(
-            (200, 100), Image.Resampling.LANCZOS
-        ).tobytes()
+        assert (
+            result.tobytes()
+            != image.resize((200, 100), Image.Resampling.LANCZOS).tobytes()
+        )
 
     def test_without_text_only_resizes(self):
         image = Image.new("RGB", (400, 200), "red")
@@ -342,9 +342,9 @@ class TestMultiframeOverwrite:
         )
         original = source.read_bytes()
 
-        result = ImageManipulator(
-            target_width=20, target_height=20
-        ).process_path(source, tmp_path, overwrite=True)
+        result = ImageManipulator(target_width=20, target_height=20).process_path(
+            source, tmp_path, overwrite=True
+        )
 
         assert result.success is False
         assert "Cannot overwrite" in result.error
@@ -355,14 +355,12 @@ class TestMultiframeOverwrite:
     def test_multipage_tiff_is_not_overwritten(self, tmp_path):
         source = tmp_path / "pages.tiff"
         frames = self._animated_frames()
-        frames[0].save(
-            source, save_all=True, append_images=frames[1:], format="TIFF"
-        )
+        frames[0].save(source, save_all=True, append_images=frames[1:], format="TIFF")
         original = source.read_bytes()
 
-        result = ImageManipulator(
-            target_width=20, target_height=20
-        ).process_path(source, tmp_path, overwrite=True)
+        result = ImageManipulator(target_width=20, target_height=20).process_path(
+            source, tmp_path, overwrite=True
+        )
 
         assert result.success is False
         assert "Cannot overwrite" in result.error
@@ -383,9 +381,9 @@ class TestMultiframeOverwrite:
             if saved.n_frames == 1:
                 pytest.skip("this Pillow build did not preserve WEBP animation")
 
-        result = ImageManipulator(
-            target_width=20, target_height=20
-        ).process_path(source, tmp_path, overwrite=True)
+        result = ImageManipulator(target_width=20, target_height=20).process_path(
+            source, tmp_path, overwrite=True
+        )
 
         assert result.success is False
         assert "Cannot overwrite" in result.error
@@ -396,9 +394,9 @@ class TestMultiframeOverwrite:
         image.putpixel((20, 20), (255, 0, 0, 255))
         image.save(source, format="GIF")
 
-        result = ImageManipulator(
-            target_width=20, target_height=20
-        ).process_path(source, tmp_path, overwrite=True)
+        result = ImageManipulator(target_width=20, target_height=20).process_path(
+            source, tmp_path, overwrite=True
+        )
 
         assert result.success is True
         with Image.open(source) as saved:
@@ -436,9 +434,9 @@ class TestAtomicSave:
         original = source.read_bytes()
         self._fail_after_truncating(monkeypatch)
 
-        result = ImageManipulator(
-            target_width=10, target_height=10
-        ).process_path(source, tmp_path, overwrite=True)
+        result = ImageManipulator(target_width=10, target_height=10).process_path(
+            source, tmp_path, overwrite=True
+        )
 
         assert result.success is False
         assert source.read_bytes() == original
@@ -449,9 +447,9 @@ class TestAtomicSave:
         source = _make_image(tmp_path / "photo.png")
         os.chmod(source, 0o640)
 
-        result = ImageManipulator(
-            target_width=10, target_height=10
-        ).process_path(source, tmp_path, overwrite=True)
+        result = ImageManipulator(target_width=10, target_height=10).process_path(
+            source, tmp_path, overwrite=True
+        )
 
         assert result.success is True
         assert source.stat().st_mode & 0o777 == 0o640

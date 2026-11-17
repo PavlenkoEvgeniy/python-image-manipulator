@@ -34,6 +34,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,dnd,multimonitor]"
 
+      - name: Run Ruff
+        run: |
+          ruff check src tests tools main.py --output-format=github
+          ruff format --check src tests tools main.py
+
       - name: Run tests
         run: python -m pytest -v
 

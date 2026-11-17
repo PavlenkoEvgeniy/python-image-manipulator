@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import pytest
 from PIL import Image, ImageDraw
 
-from image_manipulator.config import config
 from image_manipulator import text_overlay
+from image_manipulator.config import config
 from image_manipulator.text_overlay import (
     TextOverlay,
     _choose_platform_font,
@@ -216,10 +216,7 @@ class TestFontconfigFaces:
             if "slant=italic" in query:
                 output = f"{oblique}\tDejaVu Sans\n"
             else:
-                output = (
-                    f"{oblique}\tDejaVu Sans\n"
-                    f"{foreign}\tOther Family\n"
-                )
+                output = f"{oblique}\tDejaVu Sans\n{foreign}\tOther Family\n"
             return SimpleNamespace(stdout=output, returncode=0)
 
         monkeypatch.setattr(subprocess, "run", fake_run)
@@ -264,9 +261,7 @@ class TestFontconfigFaces:
 
         def fake_run(args, **kwargs):
             calls.append(args)
-            return SimpleNamespace(
-                stdout=f"{path}\tCached Family\n", returncode=0
-            )
+            return SimpleNamespace(stdout=f"{path}\tCached Family\n", returncode=0)
 
         monkeypatch.setattr(subprocess, "run", fake_run)
         text_overlay._FONT_CANDIDATE_CACHE.clear()

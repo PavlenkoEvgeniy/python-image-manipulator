@@ -6,6 +6,7 @@ corrupt file falls back silently to defaults, and each invalid field falls
 back to its own default while the remaining fields load as-is.
 """
 
+import contextlib
 import json
 import os
 import re
@@ -138,18 +139,19 @@ def validate_settings(raw: dict) -> dict:
         else config.default_color
     )
 
-    settings["font_family"] = _string(
-        raw, "font_family", config.default_font_family
-    )
+    settings["font_family"] = _string(raw, "font_family", config.default_font_family)
 
     font_path = raw.get("font_path")
-    settings["font_path"] = font_path if font_path is None or isinstance(
-        font_path, str
-    ) else None
+    settings["font_path"] = (
+        font_path if font_path is None or isinstance(font_path, str) else None
+    )
 
     settings["font_size"] = _clamped_int(
-        raw, "font_size", config.default_font_size,
-        config.min_font_size, config.max_font_size,
+        raw,
+        "font_size",
+        config.default_font_size,
+        config.min_font_size,
+        config.max_font_size,
     )
 
     font_style = raw.get("font_style")
@@ -201,18 +203,14 @@ def save_settings(settings: dict, path: Optional[str] = None) -> bool:
     payload = {"version": SETTINGS_VERSION, "settings": settings}
     try:
         os.makedirs(target_dir, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(
-            prefix=".settings-", suffix=".tmp", dir=target_dir
-        )
+        fd, tmp = tempfile.mkstemp(prefix=".settings-", suffix=".tmp", dir=target_dir)
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
             os.replace(tmp, target)
         except BaseException:
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(tmp)
-            except OSError:
-                pass
             raise
         return True
     except Exception as e:

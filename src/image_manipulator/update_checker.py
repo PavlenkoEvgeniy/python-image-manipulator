@@ -13,7 +13,7 @@ import shutil
 import sys
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from . import __version__
 
@@ -59,7 +59,7 @@ class UpdateInfo:
     release_url: str
 
 
-def parse_version(text: str) -> Optional[Tuple[int, ...]]:
+def parse_version(text: str) -> Optional[tuple[int, ...]]:
     """Extract the first dotted numeric version from a tag or version string."""
     match = _VERSION_PATTERN.search(text or "")
     if match is None:
@@ -97,9 +97,7 @@ def linux_package_kind(
             for line in handle:
                 key, _, value = line.partition("=")
                 if key in ("ID", "ID_LIKE"):
-                    identifiers.update(
-                        value.strip().strip('"').lower().split()
-                    )
+                    identifiers.update(value.strip().strip('"').lower().split())
     except OSError:
         pass
 
@@ -199,7 +197,7 @@ def parse_latest_release(
     )
 
 
-def fetch_latest_release(timeout: float = REQUEST_TIMEOUT_SECONDS) -> Dict[str, Any]:
+def fetch_latest_release(timeout: float = REQUEST_TIMEOUT_SECONDS) -> dict[str, Any]:
     """Fetch the latest release metadata from the GitHub API.
 
     Raises:
@@ -213,7 +211,9 @@ def fetch_latest_release(timeout: float = REQUEST_TIMEOUT_SECONDS) -> Dict[str, 
             "User-Agent": f"ImageManipulator/{__version__}",
         },
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with urllib.request.urlopen(  # noqa: S310 - constant https URL
+        request, timeout=timeout
+    ) as response:
         body = response.read(MAX_RESPONSE_BYTES)
 
     payload = json.loads(body.decode("utf-8"))

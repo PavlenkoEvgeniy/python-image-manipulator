@@ -45,12 +45,13 @@ def _walk(widget):
 
 def _image_labels(root):
     """Labels in the dialog widgets that display an image."""
-    labels = []
-    for toplevel in root.winfo_children():
-        for widget in _walk(toplevel):
-            if "image" in widget.keys() and widget.cget("image"):
-                labels.append(widget)
-    return labels
+    return [
+        widget
+        for toplevel in root.winfo_children()
+        for widget in _walk(toplevel)
+        if "image" in widget.keys()  # noqa: SIM118 - Tk widgets are not mappings
+        and widget.cget("image")
+    ]
 
 
 def test_about_icon_survives_dialog_garbage_collection(root):
@@ -89,9 +90,7 @@ def test_update_dialog_opens_the_direct_download(root, monkeypatch):
     assert opened == ["https://example.com/ImageManipulator-linux"]
 
 
-def test_message_dialog_survives_a_window_deleted_while_waiting(
-    root, monkeypatch
-):
+def test_message_dialog_survives_a_window_deleted_while_waiting(root, monkeypatch):
     # The user closes the dialog while wait_visibility() is pending. The
     # constructor must not let TclError escape: it used to propagate out of
     # the polling callback and kill event processing forever, which froze

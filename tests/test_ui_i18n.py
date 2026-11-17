@@ -92,9 +92,7 @@ def _pump(root, seconds=0.5):
 def test_reset_does_not_resave_and_announces_restart(app, monkeypatch):
     application, root = app
     saved, cleared, notices = [], [], []
-    monkeypatch.setattr(
-        ui, "save_settings", lambda *a, **k: saved.append(True) or True
-    )
+    monkeypatch.setattr(ui, "save_settings", lambda *a, **k: saved.append(True) or True)
     monkeypatch.setattr(
         ui, "clear_settings", lambda *a, **k: cleared.append(True) or True
     )
@@ -118,9 +116,7 @@ def test_reset_does_not_resave_and_announces_restart(app, monkeypatch):
 def test_update_result_opens_the_update_dialog(app, monkeypatch):
     application, _ = app
     captured = []
-    monkeypatch.setattr(
-        ui, "UpdateDialog", lambda parent, info: captured.append(info)
-    )
+    monkeypatch.setattr(ui, "UpdateDialog", lambda parent, info: captured.append(info))
     info = UpdateInfo(
         version="9.0.0",
         download_url="https://example.com/linux",

@@ -6,7 +6,7 @@ import re
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import ClassVar, Optional, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -50,7 +50,7 @@ def _normalize_font_text(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", text.lower())
 
 
-def _font_style_flags(name: str) -> Tuple[bool, bool, bool]:
+def _font_style_flags(name: str) -> tuple[bool, bool, bool]:
     """Return (bold, italic, condensed) flags for a font label."""
     normalized = _normalize_font_text(name)
     bold = any(
@@ -83,7 +83,11 @@ def _choose_platform_font(
         if suffix not in _ALLOWED_FONT_SUFFIXES:
             continue
         bold, italic, condensed = _font_style_flags(display_name)
-        if condensed and "condensed" not in family.lower() and "narrow" not in family.lower():
+        if (
+            condensed
+            and "condensed" not in family.lower()
+            and "narrow" not in family.lower()
+        ):
             continue
         score = 0
         if bold == wanted_bold:
@@ -110,10 +114,7 @@ def _windows_font_files() -> list[tuple[str, Path]]:
 
     font_dir = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
     user_dir = (
-        Path(os.environ.get("LOCALAPPDATA", ""))
-        / "Microsoft"
-        / "Windows"
-        / "Fonts"
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows" / "Fonts"
     )
     entries = []
     keys = (
@@ -145,9 +146,11 @@ def _windows_font_files() -> list[tuple[str, Path]]:
             continue
 
     if user_dir.is_dir():
-        for path in user_dir.iterdir():
-            if path.suffix.lower() in _FONT_EXTENSIONS:
-                entries.append((path.stem, path))
+        entries.extend(
+            (path.stem, path)
+            for path in user_dir.iterdir()
+            if path.suffix.lower() in _FONT_EXTENSIONS
+        )
     return entries
 
 
@@ -159,14 +162,13 @@ def _macos_font_files() -> list[tuple[str, Path]]:
         Path("/Library/Fonts"),
         Path.home() / "Library" / "Fonts",
     )
-    entries = []
-    for directory in directories:
-        if not directory.is_dir():
-            continue
-        for path in directory.rglob("*"):
-            if path.is_file() and path.suffix.lower() in _FONT_EXTENSIONS:
-                entries.append((path.stem, path))
-    return entries
+    return [
+        (path.stem, path)
+        for directory in directories
+        if directory.is_dir()
+        for path in directory.rglob("*")
+        if path.is_file() and path.suffix.lower() in _FONT_EXTENSIONS
+    ]
 
 
 def _platform_font_files() -> list[tuple[str, Path]]:
@@ -216,7 +218,7 @@ class TextOverlay:
     ITALIC_SHEAR = 0.25
 
     # Suffix appended to a family name to probe its styled variant.
-    STYLE_SUFFIXES = {
+    STYLE_SUFFIXES: ClassVar[dict[str, str]] = {
         "Normal": "",
         "Bold": " Bold",
         "Italic": " Italic",
@@ -224,7 +226,7 @@ class TextOverlay:
     }
 
     # Style names as fontconfig reports them.
-    FC_STYLE_NAMES = {
+    FC_STYLE_NAMES: ClassVar[dict[str, str]] = {
         "Normal": "Regular",
         "Bold": "Bold",
         "Italic": "Italic",
@@ -268,6 +270,14 @@ class TextOverlay:
 
     # --- Font resolution ---
 
+    @staticmethod
+    def _try_load_font(name, size: int) -> Optional[FontType]:
+        """Load a font file, returning None when the path cannot be opened."""
+        try:
+            return ImageFont.truetype(name, size)
+        except Exception:
+            return None
+
     def _load_system_font(self, size: int) -> Optional[FontType]:
         """Load a system font by family name, trying the styled variant first."""
         family = (self.font_family or "").strip()
@@ -278,21 +288,17 @@ class TextOverlay:
         suffix = self.STYLE_SUFFIXES.get(style, "")
 
         for name in ([family + suffix] if suffix else []) + [family]:
-            try:
-                font = ImageFont.truetype(name, size)
+            font = self._try_load_font(name, size)
+            if font is not None:
                 logger.debug(f"Loaded system font: {name}")
                 return font
-            except Exception:
-                continue
 
         fc_style = self.FC_STYLE_NAMES.get(style, "Regular")
         for path in self._fontconfig_candidates(family, fc_style):
-            try:
-                font = ImageFont.truetype(path, size)
+            font = self._try_load_font(path, size)
+            if font is not None:
                 logger.debug(f"Loaded system font: {path}")
                 return font
-            except Exception:
-                continue
 
         if family not in _WARNED_UNRESOLVED_FAMILIES:
             logger.warning(
@@ -330,17 +336,13 @@ class TextOverlay:
             "Italic": "slant=italic:weight=regular",
             "Bold Italic": "slant=italic:weight=bold",
         }.get(fc_style)
-        queries = (
-            (f"{family}:{slant_weight}", family)
-            if slant_weight
-            else (family,)
-        )
+        queries = (f"{family}:{slant_weight}", family) if slant_weight else (family,)
         candidates = []
         seen = set()
         for query in queries:
             try:
-                result = subprocess.run(
-                    ["fc-match", "-f", "%{file}\t%{family}\n", query],
+                result = subprocess.run(  # noqa: S603 - fixed executable
+                    ["fc-match", "-f", "%{file}\t%{family}\n", query],  # noqa: S607
                     capture_output=True,
                     text=True,
                     timeout=5,
@@ -364,8 +366,10 @@ class TextOverlay:
                     continue
                 filename = os.path.basename(path).lower()
                 if (
-                    "condensed" in filename or "narrow" in filename
-                ) and "condensed" not in family.lower() and "narrow" not in family.lower():
+                    ("condensed" in filename or "narrow" in filename)
+                    and "condensed" not in family.lower()
+                    and "narrow" not in family.lower()
+                ):
                     continue
                 if not os.path.exists(path):
                     continue
@@ -383,22 +387,22 @@ class TextOverlay:
         if self.font_path and os.path.exists(self.font_path):
             try:
                 font = ImageFont.truetype(self.font_path, size)
-                logger.debug(f"Loaded custom font: {self.font_path}")
-                yield font
             except Exception as e:
                 logger.warning(
                     f"Failed to load custom font {self.font_path}: {e}. Using fallback."
                 )
+            else:
+                logger.debug(f"Loaded custom font: {self.font_path}")
+                yield font
 
         font = self._load_system_font(size)
         if font is not None:
             yield font
 
         for font_name in config.system_fonts:
-            try:
-                yield ImageFont.truetype(font_name, size)
-            except Exception:
-                continue
+            font = self._try_load_font(font_name, size)
+            if font is not None:
+                yield font
 
         logger.info("Using default PIL font")
         yield _default_font(size)
@@ -456,7 +460,7 @@ class TextOverlay:
 
     # --- Text metrics and placement ---
 
-    def _get_style_flags(self) -> Tuple[bool, bool]:
+    def _get_style_flags(self) -> tuple[bool, bool]:
         """Get (bold, italic) flags from the font style setting."""
         style = (self.font_style or "").strip().lower()
         return "bold" in style, "italic" in style
@@ -473,7 +477,7 @@ class TextOverlay:
         text: str,
         font: FontType,
         stroke_width: int = 0,
-    ) -> Tuple[int, int, int, int]:
+    ) -> tuple[int, int, int, int]:
         """Measure the text bounding box.
 
         Returns:
@@ -497,7 +501,7 @@ class TextOverlay:
         img_height: int,
         text_width: int,
         text_height: int,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Calculate the text bounding box position inside the image."""
         position = self.position
         offset_up = self.offset_up

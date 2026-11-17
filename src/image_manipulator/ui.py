@@ -1,5 +1,6 @@
 """Tkinter main window for Image Manipulator."""
 
+import contextlib
 import logging
 import os
 import queue
@@ -99,9 +100,7 @@ class ManipulatorApp:
         self._poll_events()
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         center_on_screen(self.root, config.window_width, config.window_height)
-        self.root.after(
-            config.update_check_startup_delay_ms, self._maybe_check_updates
-        )
+        self.root.after(config.update_check_startup_delay_ms, self._maybe_check_updates)
 
         logger.info("UI initialized")
 
@@ -194,9 +193,7 @@ class ManipulatorApp:
                 value=language.code,
                 command=self._on_language_selected,
             )
-        file_menu.add_cascade(
-            label=tr("menu.file.language"), menu=language_menu
-        )
+        file_menu.add_cascade(label=tr("menu.file.language"), menu=language_menu)
         file_menu.add_command(
             label=tr("menu.file.reset_settings"), command=self.reset_settings
         )
@@ -244,15 +241,15 @@ class ManipulatorApp:
         frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         frame.columnconfigure(3, weight=1)
 
-        ttk.Button(frame, text=tr("menu.file.add_images"), command=self.load_images).grid(
-            row=0, column=0, padx=(0, 5)
-        )
+        ttk.Button(
+            frame, text=tr("menu.file.add_images"), command=self.load_images
+        ).grid(row=0, column=0, padx=(0, 5))
         ttk.Button(
             frame, text=tr("menu.file.remove_selected"), command=self.remove_selected
         ).grid(row=0, column=1, padx=5)
-        ttk.Button(frame, text=tr("menu.file.clear_list"), command=self.clear_images).grid(
-            row=0, column=2, padx=5
-        )
+        ttk.Button(
+            frame, text=tr("menu.file.clear_list"), command=self.clear_images
+        ).grid(row=0, column=2, padx=5)
 
         hint = tr("hint.drag_drop") if HAS_DND else tr("hint.no_drag_drop")
         ttk.Label(frame, text=hint, foreground="#666666").grid(
@@ -371,9 +368,7 @@ class ManipulatorApp:
             row=0, column=1, columnspan=3, sticky="ew", padx=5, pady=5
         )
 
-        ttk.Label(tab, text=tr("text.color")).grid(
-            row=1, column=0, sticky="w", pady=5
-        )
+        ttk.Label(tab, text=tr("text.color")).grid(row=1, column=0, sticky="w", pady=5)
         self.color_preview = tk.Label(
             tab,
             bg=self.text_color,
@@ -393,7 +388,9 @@ class ManipulatorApp:
         ttk.Combobox(
             tab,
             textvariable=self.position_var,
-            values=[translate_enum("position", value) for value in config.text_positions],
+            values=[
+                translate_enum("position", value) for value in config.text_positions
+            ],
             state="readonly",
             width=16,
         ).grid(row=2, column=1, sticky="w", padx=5, pady=5)
@@ -404,7 +401,9 @@ class ManipulatorApp:
         ttk.Combobox(
             tab,
             textvariable=self.font_style_var,
-            values=[translate_enum("font_style", value) for value in config.font_styles],
+            values=[
+                translate_enum("font_style", value) for value in config.font_styles
+            ],
             state="readonly",
             width=16,
         ).grid(row=2, column=3, sticky="w", padx=5, pady=5)
@@ -447,9 +446,7 @@ class ManipulatorApp:
         ttk.Label(tab, text=tr("text.font_file")).grid(
             row=5, column=0, sticky="w", pady=5
         )
-        self.font_file_label = ttk.Label(
-            tab, text=tr("text.system_default"), width=22
-        )
+        self.font_file_label = ttk.Label(tab, text=tr("text.system_default"), width=22)
         self.font_file_label.grid(row=5, column=1, sticky="w", padx=5, pady=5)
         ttk.Button(tab, text=tr("text.select_font"), command=self.choose_font).grid(
             row=5, column=2, sticky="w", padx=(16, 0), pady=5
@@ -497,9 +494,9 @@ class ManipulatorApp:
         ttk.Entry(frame, textvariable=self.output_dir_var).grid(
             row=0, column=1, sticky="ew", padx=5
         )
-        ttk.Button(frame, text=tr("output.browse"), command=self.browse_output_dir).grid(
-            row=0, column=2, padx=(5, 0)
-        )
+        ttk.Button(
+            frame, text=tr("output.browse"), command=self.browse_output_dir
+        ).grid(row=0, column=2, padx=(5, 0))
 
         options = ttk.Frame(frame)
         options.grid(row=1, column=0, columnspan=3, sticky="w", pady=(8, 0))
@@ -534,7 +531,10 @@ class ManipulatorApp:
         actions.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(8, 0))
 
         self.process_button = ttk.Button(
-            actions, text=tr("action.process_all"), command=self.start_processing, width=20
+            actions,
+            text=tr("action.process_all"),
+            command=self.start_processing,
+            width=20,
         )
         self.process_button.pack(side=tk.LEFT, padx=(0, 5))
 
@@ -614,11 +614,15 @@ class ManipulatorApp:
         if not HAS_DND:
             return
         for widget in (self.root, self.file_listbox, self.preview_canvas):
-            try:
-                widget.drop_target_register(DND_FILES)
-                widget.dnd_bind("<<Drop>>", self._on_drop)
-            except Exception as e:
-                logger.warning(f"Could not enable drag & drop on {widget}: {e}")
+            self._enable_dnd(widget)
+
+    def _enable_dnd(self, widget) -> None:
+        """Enable drop handling on one widget without breaking the others."""
+        try:
+            widget.drop_target_register(DND_FILES)
+            widget.dnd_bind("<<Drop>>", self._on_drop)
+        except Exception as e:
+            logger.warning(f"Could not enable drag & drop on {widget}: {e}")
 
     # --- Preview ---
 
@@ -626,10 +630,8 @@ class ManipulatorApp:
         """Schedule a debounced preview refresh."""
         self._preview_generation += 1
         if self._preview_after_id is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self.root.after_cancel(self._preview_after_id)
-            except Exception:
-                pass
         self._preview_after_id = self.root.after(
             config.preview_debounce_ms, self._refresh_preview
         )
@@ -637,10 +639,8 @@ class ManipulatorApp:
     def _cancel_scheduled_preview(self) -> None:
         """Cancel a pending preview refresh, if any."""
         if self._preview_after_id is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self.root.after_cancel(self._preview_after_id)
-            except Exception:
-                pass
             self._preview_after_id = None
 
     def _refresh_preview(self) -> None:
@@ -684,9 +684,7 @@ class ManipulatorApp:
             return
         self._events.put(("preview", generation, rendered, None))
 
-    def _on_preview_ready(
-        self, generation: int, rendered, error
-    ) -> None:
+    def _on_preview_ready(self, generation: int, rendered, error) -> None:
         """Show a preview result unless a newer request superseded it."""
         if generation != self._preview_generation:
             return
@@ -848,10 +846,8 @@ class ManipulatorApp:
     def _schedule_settings_save(self) -> None:
         """Schedule a debounced settings autosave."""
         if self._save_after_id is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self.root.after_cancel(self._save_after_id)
-            except Exception:
-                pass
         self._save_after_id = self.root.after(
             config.settings_save_debounce_ms, self._save_settings_now
         )
@@ -859,10 +855,8 @@ class ManipulatorApp:
     def _cancel_scheduled_settings_save(self) -> None:
         """Cancel a pending settings autosave, if any."""
         if self._save_after_id is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self.root.after_cancel(self._save_after_id)
-            except Exception:
-                pass
             self._save_after_id = None
 
     def _save_settings_now(self) -> None:
@@ -876,20 +870,26 @@ class ManipulatorApp:
             "language": validate_language(self.language_var.get()),
             "check_updates": bool(self.check_updates_var.get()),
             "width": self._int_value(
-                self.width_var, config.default_width,
-                config.min_dimension, config.max_dimension,
+                self.width_var,
+                config.default_width,
+                config.min_dimension,
+                config.max_dimension,
             ),
             "height": self._int_value(
-                self.height_var, config.default_height,
-                config.min_dimension, config.max_dimension,
+                self.height_var,
+                config.default_height,
+                config.min_dimension,
+                config.max_dimension,
             ),
             "maintain_aspect": bool(self.maintain_aspect_var.get()),
             "add_dimensions": bool(self.add_dimensions_var.get()),
             "rotate_portrait": bool(self.rotate_portrait_var.get()),
             "output_format": self.output_format_var.get(),
             "jpeg_quality": self._int_value(
-                self.jpeg_quality_var, config.default_jpeg_quality,
-                config.min_jpeg_quality, config.max_jpeg_quality,
+                self.jpeg_quality_var,
+                config.default_jpeg_quality,
+                config.min_jpeg_quality,
+                config.max_jpeg_quality,
             ),
             "text": self.text_var.get(),
             "color": self.text_color,
@@ -898,8 +898,10 @@ class ManipulatorApp:
             ),
             "font_path": self.font_path,
             "font_size": self._int_value(
-                self.font_size_var, config.default_font_size,
-                config.min_font_size, config.max_font_size,
+                self.font_size_var,
+                config.default_font_size,
+                config.min_font_size,
+                config.max_font_size,
             ),
             "font_style": canonical_enum("font_style", self.font_style_var.get()),
             "position": canonical_enum("position", self.position_var.get()),
@@ -997,9 +999,7 @@ class ManipulatorApp:
         self.offset_up_var.set(str(config.default_offset_up))
         self.offset_left_var.set(str(config.default_offset_left))
         self.font_family_var.set(config.default_font_family)
-        self.font_style_var.set(
-            translate_enum("font_style", config.default_font_style)
-        )
+        self.font_style_var.set(translate_enum("font_style", config.default_font_style))
         self.font_size_var.set(str(config.default_font_size))
 
         self.font_path = None
@@ -1133,9 +1133,7 @@ class ManipulatorApp:
                         ),
                     )
                 )
-                result = manipulator.process_path(
-                    path, output_dir, overwrite=overwrite
-                )
+                result = manipulator.process_path(path, output_dir, overwrite=overwrite)
                 if result.success:
                     success += 1
                 elif result.error:
@@ -1164,10 +1162,9 @@ class ManipulatorApp:
             self._drain_events()
         except Exception:
             logger.exception("Event polling failed")
-        try:
+        with contextlib.suppress(RuntimeError, tk.TclError):
             self.root.after(100, self._poll_events)
-        except (RuntimeError, tk.TclError):
-            pass  # the window is gone; polling stops with it
+        # If after() raised, the window is gone and polling stops with it.
 
     def _drain_events(self) -> None:
         """Apply every queued event; one bad event must not block the rest."""
@@ -1205,12 +1202,8 @@ class ManipulatorApp:
         self.process_button.config(state="normal")
 
         if not errors:
-            self.status_var.set(
-                tr("status.done", success=success, total=total)
-            )
-            destination = (
-                tr("dialog.complete.originals") if overwrite else output_dir
-            )
+            self.status_var.set(tr("status.done", success=success, total=total))
+            destination = tr("dialog.complete.originals") if overwrite else output_dir
             ErrorDialog.show_info(
                 tr("dialog.complete.title"),
                 tr(
@@ -1252,14 +1245,14 @@ class ManipulatorApp:
             font_family=self.font_family_var.get().strip() or None,
             font_path=self.font_path,
             font_size=self._int_value(
-                self.font_size_var, config.default_font_size,
-                config.min_font_size, config.max_font_size,
+                self.font_size_var,
+                config.default_font_size,
+                config.min_font_size,
+                config.max_font_size,
             ),
             font_style=canonical_enum("font_style", self.font_style_var.get()),
             position=canonical_enum("position", self.position_var.get()),
-            offset_up=self._int_value(
-                self.offset_up_var, config.default_offset_up, 0
-            ),
+            offset_up=self._int_value(self.offset_up_var, config.default_offset_up, 0),
             offset_left=self._int_value(
                 self.offset_left_var, config.default_offset_left, 0
             ),
@@ -1267,19 +1260,25 @@ class ManipulatorApp:
 
         return ImageManipulator(
             target_width=self._int_value(
-                self.width_var, config.default_width,
-                config.min_dimension, config.max_dimension,
+                self.width_var,
+                config.default_width,
+                config.min_dimension,
+                config.max_dimension,
             ),
             target_height=self._int_value(
-                self.height_var, config.default_height,
-                config.min_dimension, config.max_dimension,
+                self.height_var,
+                config.default_height,
+                config.min_dimension,
+                config.max_dimension,
             ),
             maintain_aspect=bool(self.maintain_aspect_var.get()),
             rotate_portrait_to_landscape=bool(self.rotate_portrait_var.get()),
             output_format=OutputFormat.from_name(self.output_format_var.get()),
             jpeg_quality=self._int_value(
-                self.jpeg_quality_var, config.default_jpeg_quality,
-                config.min_jpeg_quality, config.max_jpeg_quality,
+                self.jpeg_quality_var,
+                config.default_jpeg_quality,
+                config.min_jpeg_quality,
+                config.max_jpeg_quality,
             ),
             add_dimensions_to_filename=bool(self.add_dimensions_var.get()),
             text_overlay=text_overlay,

@@ -1,11 +1,12 @@
 """Processing pipeline: load → resize → text overlay → save."""
 
+import contextlib
 import logging
 import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 from PIL import Image, ImageOps
 
@@ -71,11 +72,7 @@ def _normalize_high_depth(image: Image.Image) -> Image.Image:
     if high <= low:
         return image.convert("L").convert("RGB")
     scale = 255.0 / (high - low)
-    return (
-        image.point(lambda value: (value - low) * scale)
-        .convert("L")
-        .convert("RGB")
-    )
+    return image.point(lambda value: (value - low) * scale).convert("L").convert("RGB")
 
 
 def _normalize_mode(image: Image.Image) -> Image.Image:
@@ -102,7 +99,7 @@ def _normalize_mode(image: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
-def load_image(path) -> Tuple[Image.Image, Optional[bytes]]:
+def load_image(path) -> tuple[Image.Image, Optional[bytes]]:
     """Load an image with its display orientation baked into the pixels.
 
     Viewers display an image according to its EXIF Orientation tag, which may
@@ -140,9 +137,7 @@ def _to_gif_palette(image: Image.Image) -> Image.Image:
     """Convert to a P image while preserving a single transparent index."""
     rgba = image.convert("RGBA")
     alpha = rgba.getchannel("A")
-    palette = rgba.convert("RGB").quantize(
-        colors=255, method=Image.Quantize.MEDIANCUT
-    )
+    palette = rgba.convert("RGB").quantize(colors=255, method=Image.Quantize.MEDIANCUT)
     colors = palette.getpalette() or []
     if len(colors) < 768:
         colors.extend([0] * (768 - len(colors)))
@@ -227,10 +222,8 @@ def save_image(
             os.chmod(temp_path, 0o644)
         os.replace(temp_path, destination)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             temp_path.unlink()
-        except OSError:
-            pass
         raise
 
 
@@ -301,7 +294,7 @@ class ImageManipulator:
         output_dir,
         rendered: Image.Image,
         overwrite: bool,
-    ) -> Tuple[Path, str]:
+    ) -> tuple[Path, str]:
         """Choose the destination path and Pillow format for a result.
 
         Args:

@@ -3,7 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 
 @dataclass
@@ -18,7 +18,7 @@ class AppConfig:
     window_height: int = 800
 
     # Supported image and font formats
-    valid_extensions: Tuple[str, ...] = (
+    valid_extensions: tuple[str, ...] = (
         ".png",
         ".jpg",
         ".jpeg",
@@ -28,7 +28,7 @@ class AppConfig:
         ".tif",
         ".webp",
     )
-    font_extensions: Tuple[str, ...] = (".ttf", ".otf")
+    font_extensions: tuple[str, ...] = (".ttf", ".otf")
 
     # Resize defaults
     default_width: int = 800
@@ -38,14 +38,14 @@ class AppConfig:
     default_rotate_portrait_to_landscape: bool = False
     default_output_format: str = "JPEG"
     default_jpeg_quality: int = 95
-    output_formats: Tuple[str, ...] = ("JPEG", "PNG", "WEBP", "BMP")
+    output_formats: tuple[str, ...] = ("JPEG", "PNG", "WEBP", "BMP")
     min_dimension: int = 1
     max_dimension: int = 20000
     min_jpeg_quality: int = 1
     max_jpeg_quality: int = 100
 
     # Preset resolutions
-    presets: Tuple[Tuple[str, int, int], ...] = (
+    presets: tuple[tuple[str, int, int], ...] = (
         ("Custom", 0, 0),
         ("1920x1080", 1920, 1080),
         ("1280x720", 1280, 720),
@@ -64,8 +64,8 @@ class AppConfig:
     default_font_style: str = "Normal"
     default_font_family: str = "Arial"
 
-    font_styles: Tuple[str, ...] = ("Normal", "Bold", "Italic", "Bold Italic")
-    text_positions: Tuple[str, ...] = (
+    font_styles: tuple[str, ...] = ("Normal", "Bold", "Italic", "Bold Italic")
+    text_positions: tuple[str, ...] = (
         "top left",
         "top right",
         "bottom left",
@@ -82,7 +82,7 @@ class AppConfig:
     update_check_startup_delay_ms: int = 1500
 
     # Fallback system fonts
-    system_fonts: Tuple[str, ...] = (
+    system_fonts: tuple[str, ...] = (
         "arial.ttf",
         "Arial.ttf",
         "DejaVuSans.ttf",
@@ -105,7 +105,7 @@ class AppConfig:
         base = desktop if os.path.isdir(desktop) else user_home
         return os.path.join(base, self.default_output_dir)
 
-    def get_preset_dimensions(self, preset_name: str) -> Tuple[int, int]:
+    def get_preset_dimensions(self, preset_name: str) -> tuple[int, int]:
         """Return (width, height) for a named preset, or (0, 0)."""
         for name, width, height in self.presets:
             if name == preset_name:

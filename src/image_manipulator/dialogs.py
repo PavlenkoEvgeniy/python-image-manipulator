@@ -4,6 +4,7 @@ import logging
 import tkinter as tk
 import webbrowser
 from tkinter import ttk
+from typing import ClassVar
 
 from PIL import ImageTk
 
@@ -159,10 +160,10 @@ class UpdateDialog:
 class MessageDialog:
     """Modal message dialog centered over its parent window."""
 
-    _STYLES = {
+    _STYLES: ClassVar[dict[str, tuple[str, str]]] = {
         "error": ("✖", "#b3261e"),
         "warning": ("⚠", "#b36b00"),
-        "info": ("ℹ", "#1b6ec2"),
+        "info": ("ℹ", "#1b6ec2"),  # noqa: RUF001 - intentional info glyph
     }
 
     def __init__(self, parent: tk.Wm, level: str, title: str, message: str):

@@ -18,8 +18,8 @@ from PIL import Image
 
 pytest.importorskip("tkinter")
 
-from image_manipulator import ui  # noqa: E402
-from image_manipulator.pipeline import ImageManipulator  # noqa: E402
+from image_manipulator import ui
+from image_manipulator.pipeline import ImageManipulator
 
 
 class _EventRecorder:
@@ -79,9 +79,7 @@ class TestPollLoop:
         with caplog.at_level(logging.ERROR, logger=ui.logger.name):
             ui.ManipulatorApp._poll_events(StubApp())  # must not raise
 
-        assert [(ms, cb.__name__) for ms, cb in scheduled] == [
-            (100, "_poll_events")
-        ]
+        assert [(ms, cb.__name__) for ms, cb in scheduled] == [(100, "_poll_events")]
         assert "Event polling failed" in caplog.text
 
 

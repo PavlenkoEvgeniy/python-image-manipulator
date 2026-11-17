@@ -10,8 +10,9 @@ import locale
 import logging
 import os
 import warnings
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Dict, Mapping, Optional, Tuple
+from typing import Optional
 
 from .config import config
 
@@ -27,13 +28,13 @@ class Language:
     code: str
     native_name: str
     english_name: str
-    preferred_fonts: Tuple[str, ...] = ()
+    preferred_fonts: tuple[str, ...] = ()
 
 
 # Sixteen widely used desktop languages. Hindi and Arabic are deliberately absent:
 # Tk 8.6 does not shape Devanagari or Arabic scripts, so they would render
 # broken on every platform. CJK, Latin and Cyrillic need no shaping.
-LANGUAGES: Tuple[Language, ...] = (
+LANGUAGES: tuple[Language, ...] = (
     Language("en", "English", "English"),
     Language("ru", "Русский", "Russian"),
     Language("es", "Español", "Spanish"),
@@ -67,12 +68,14 @@ LANGUAGES: Tuple[Language, ...] = (
     Language("id", "Bahasa Indonesia", "Indonesian"),
 )
 
-LANGUAGES_BY_CODE: Dict[str, Language] = {language.code: language for language in LANGUAGES}
-SUPPORTED_CODES: Tuple[str, ...] = tuple(LANGUAGES_BY_CODE)
+LANGUAGES_BY_CODE: dict[str, Language] = {
+    language.code: language for language in LANGUAGES
+}
+SUPPORTED_CODES: tuple[str, ...] = tuple(LANGUAGES_BY_CODE)
 
 # Windows reports locale names such as "Russian_Russia.1251", not POSIX
 # codes. Map the English language names to the catalogs we ship.
-_WINDOWS_LANGUAGE_ALIASES: Dict[str, str] = {
+_WINDOWS_LANGUAGE_ALIASES: dict[str, str] = {
     "english": "en",
     "russian": "ru",
     "spanish": "es",
@@ -92,7 +95,7 @@ _WINDOWS_LANGUAGE_ALIASES: Dict[str, str] = {
     "indonesian": "id",
 }
 
-_ENUM_KEYS: Dict[str, Dict[str, str]] = {
+_ENUM_KEYS: dict[str, dict[str, str]] = {
     "position": {
         "top left": "position.top_left",
         "top right": "position.top_right",
@@ -108,7 +111,7 @@ _ENUM_KEYS: Dict[str, Dict[str, str]] = {
     },
 }
 
-_catalogs: Dict[str, Dict[str, str]] = {}
+_catalogs: dict[str, dict[str, str]] = {}
 _active_language: str = config.default_language
 
 
@@ -117,12 +120,12 @@ def catalog_path(code: str) -> str:
     return os.path.join(CATALOG_DIR, f"{code}.json")
 
 
-def load_catalog(code: str) -> Dict[str, str]:
+def load_catalog(code: str) -> dict[str, str]:
     """Load and cache a catalog; a broken file yields an empty catalog."""
     if code in _catalogs:
         return _catalogs[code]
 
-    catalog: Dict[str, str] = {}
+    catalog: dict[str, str] = {}
     try:
         with open(catalog_path(code), encoding="utf-8") as handle:
             raw = json.load(handle)
@@ -162,7 +165,9 @@ def get_language() -> str:
 
 def language_info(code: Optional[str] = None) -> Language:
     """Return the Language record for a code (or for the active language)."""
-    return LANGUAGES_BY_CODE[validate_language(code if code is not None else _active_language)]
+    return LANGUAGES_BY_CODE[
+        validate_language(code if code is not None else _active_language)
+    ]
 
 
 def tr(key: str, **kwargs: object) -> str:
@@ -228,7 +233,9 @@ def match_locale(value: str) -> Optional[str]:
     if language == "zh":
         # Only Simplified Chinese is supported; Traditional falls back to
         # English. Script and region can both be present (zh-Hans-CN).
-        return "zh_CN" if any(part in ("CN", "SG", "HANS") for part in subtags) else None
+        return (
+            "zh_CN" if any(part in ("CN", "SG", "HANS") for part in subtags) else None
+        )
     if language == "fil":
         # Filipino and Tagalog share one catalog; OS locales use both codes.
         return "tl"

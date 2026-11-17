@@ -26,12 +26,14 @@ S = 2048
 FINAL_SIZE = 1024
 PACKAGE_SIZE = 256
 
-GRADIENT_START = (109, 40, 217)   # violet-700
-GRADIENT_END = (6, 182, 212)      # cyan-500
-INK = (30, 27, 75, 255)           # indigo-950
+GRADIENT_START = (109, 40, 217)  # violet-700
+GRADIENT_END = (6, 182, 212)  # cyan-500
+INK = (30, 27, 75, 255)  # indigo-950
 
 
-def lerp(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[int, int, int]:
+def lerp(
+    a: tuple[int, int, int], b: tuple[int, int, int], t: float
+) -> tuple[int, int, int]:
     """Linearly interpolate between two RGB colors."""
     return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
 
@@ -43,7 +45,9 @@ def diagonal_gradient(size: int) -> Image.Image:
     pixels = gradient.load()
     for y in range(small):
         for x in range(small):
-            pixels[x, y] = lerp(GRADIENT_START, GRADIENT_END, (x + y) / (2 * (small - 1)))
+            pixels[x, y] = lerp(
+                GRADIENT_START, GRADIENT_END, (x + y) / (2 * (small - 1))
+            )
     return gradient.resize((size, size), Image.Resampling.BICUBIC)
 
 
@@ -280,9 +284,7 @@ def write_icns(image: Image.Image, path: Path) -> None:
         (1024, b"ic10"),
     ):
         buffer = io.BytesIO()
-        image.resize((size, size), Image.Resampling.LANCZOS).save(
-            buffer, format="PNG"
-        )
+        image.resize((size, size), Image.Resampling.LANCZOS).save(buffer, format="PNG")
         payload = buffer.getvalue()
         chunks.append(chunk_type + struct.pack(">I", len(payload) + 8) + payload)
 
@@ -300,7 +302,15 @@ def main() -> None:
     icon.save(
         ASSETS / "icon.ico",
         format="ICO",
-        sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+        sizes=[
+            (16, 16),
+            (24, 24),
+            (32, 32),
+            (48, 48),
+            (64, 64),
+            (128, 128),
+            (256, 256),
+        ],
     )
     write_icns(icon, ASSETS / "icon.icns")
     icon.resize((PACKAGE_SIZE, PACKAGE_SIZE), Image.Resampling.LANCZOS).save(
