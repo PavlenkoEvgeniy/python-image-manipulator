@@ -20,6 +20,11 @@ pytest.importorskip("tkinter")
 
 from image_manipulator import ui
 from image_manipulator.pipeline import ImageManipulator
+from image_manipulator.ui_events import CompleteEvent, StatusEvent
+
+
+class _PoisonEvent:
+    """Event that makes the dispatcher raise."""
 
 
 class _EventRecorder:
@@ -30,7 +35,7 @@ class _EventRecorder:
         self.applied = []
 
     def _dispatch_event(self, event):
-        if event[0] == "poison":
+        if isinstance(event, _PoisonEvent):
             raise RuntimeError("handler blew up")
         self.applied.append(event)
 
@@ -38,18 +43,18 @@ class _EventRecorder:
 class TestEventDrain:
     def test_one_bad_event_does_not_stop_the_others(self, caplog):
         app = _EventRecorder()
-        app._events.put(("poison",))
-        app._events.put(("status", "Processing 1/2: a.png"))
-        app._events.put(("complete", 2, 2, [], "/tmp", False))
+        app._events.put(_PoisonEvent())
+        app._events.put(StatusEvent("Processing 1/2: a.png"))
+        app._events.put(CompleteEvent(2, 2, [], "/tmp", False))
 
         with caplog.at_level(logging.ERROR, logger=ui.logger.name):
             ui.ManipulatorApp._drain_events(app)
 
         assert app.applied == [
-            ("status", "Processing 1/2: a.png"),
-            ("complete", 2, 2, [], "/tmp", False),
+            StatusEvent("Processing 1/2: a.png"),
+            CompleteEvent(2, 2, [], "/tmp", False),
         ]
-        assert "poison" in caplog.text
+        assert "Failed to apply event" in caplog.text
 
     def test_drain_returns_normally_when_the_queue_is_empty(self):
         app = _EventRecorder()
@@ -99,14 +104,14 @@ class TestUnexpectedWorkerFailure:
         events = []
         while not app._events.empty():
             events.append(app._events.get_nowait())
-        completes = [event for event in events if event[0] == "complete"]
+        completes = [event for event in events if isinstance(event, CompleteEvent)]
 
         assert len(completes) == 1
-        _, success, total, errors, output_dir, overwrite = completes[0]
-        assert (success, total) == (0, 2)
-        assert errors
-        assert "boom" in errors[0]
-        assert (output_dir, overwrite) == ("/tmp", False)
+        complete = completes[0]
+        assert (complete.success, complete.total) == (0, 2)
+        assert complete.errors
+        assert "boom" in complete.errors[0]
+        assert (complete.output_dir, complete.overwrite) == ("/tmp", False)
         assert "Batch worker stopped early" in caplog.text
 
 
@@ -122,10 +127,10 @@ class TestPreviewWorker:
 
         ui.ManipulatorApp._preview_worker(app, 4, StubManipulator(), image)
 
-        _, generation, rendered, error = app._events.get_nowait()
-        assert generation == 4
-        assert rendered.size == image.size
-        assert error is None
+        event = app._events.get_nowait()
+        assert event.generation == 4
+        assert event.image.size == image.size
+        assert event.error is None
 
     def test_worker_posts_an_error_instead_of_raising(self):
         class BrokenManipulator:
@@ -138,10 +143,10 @@ class TestPreviewWorker:
             app, 2, BrokenManipulator(), Image.new("RGB", (8, 8))
         )
 
-        _, generation, rendered, error = app._events.get_nowait()
-        assert generation == 2
-        assert rendered is None
-        assert isinstance(error, RuntimeError)
+        event = app._events.get_nowait()
+        assert event.generation == 2
+        assert event.image is None
+        assert isinstance(event.error, RuntimeError)
 
     def test_stale_preview_is_ignored(self):
         shown = []
@@ -225,12 +230,12 @@ class TestSecondBatchRun:
         events = []
         while not app._events.empty():
             events.append(app._events.get_nowait())
-        statuses = [e for e in events if e[0] == "status"]
-        completes = [e for e in events if e[0] == "complete"]
+        statuses = [e for e in events if isinstance(e, StatusEvent)]
+        completes = [e for e in events if isinstance(e, CompleteEvent)]
 
         # A repeated batch run is a full pass: per-item progress both times,
         # a completion event for every run, and new results that never
         # replace the previous run's files.
         assert len(statuses) == 6
-        assert [e[1] for e in completes] == [3, 3]
+        assert [e.success for e in completes] == [3, 3]
         assert len(list(output.iterdir())) == 6

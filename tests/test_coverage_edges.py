@@ -22,6 +22,7 @@ from image_manipulator import (
 from image_manipulator.pipeline import ImageManipulator, _normalize_high_depth
 from image_manipulator.resize import OutputFormat
 from image_manipulator.text_overlay import TextOverlay
+from image_manipulator.ui_events import PreviewEvent, StatusEvent, UpdateEvent
 
 
 class _Var:
@@ -624,11 +625,11 @@ class TestUiEdges:
             _on_update_result=lambda *args: setattr(app, "update", args),
         )
 
-        ui.ManipulatorApp._dispatch_event(app, ("status", "ready"))
+        ui.ManipulatorApp._dispatch_event(app, StatusEvent("ready"))
         assert app.status_var.value == "ready"
 
-        ui.ManipulatorApp._dispatch_event(app, ("preview", 1, None, None))
+        ui.ManipulatorApp._dispatch_event(app, PreviewEvent(1, None, None))
         assert app.preview == (1, None, None)
 
-        ui.ManipulatorApp._dispatch_event(app, ("update", False, None, None))
+        ui.ManipulatorApp._dispatch_event(app, UpdateEvent(False, None, None))
         assert app.update == (False, None, None)

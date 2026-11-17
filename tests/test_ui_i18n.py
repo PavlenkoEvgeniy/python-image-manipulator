@@ -109,7 +109,7 @@ def test_reset_does_not_resave_and_announces_restart(app, monkeypatch):
 
     assert cleared == [True]
     assert saved == []
-    assert application._save_after_id is None
+    assert application._save_debouncer.pending is False
     assert notices
 
 

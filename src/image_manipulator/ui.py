@@ -13,6 +13,7 @@ from PIL import Image, ImageTk
 
 from . import __version__
 from .config import config, get_app_dir
+from .debounce import Debouncer
 from .dialogs import AboutDialog, ErrorDialog, UpdateDialog
 from .i18n import (
     LANGUAGES,
@@ -28,8 +29,16 @@ from .i18n import (
 from .pipeline import ImageManipulator, load_image
 from .positioning import center_on_screen
 from .resize import OutputFormat
+from .settings_snapshot import SettingsSnapshot
 from .settings_store import clear_settings, load_settings, save_settings
 from .text_overlay import TextOverlay
+from .ui_events import (
+    CompleteEvent,
+    PreviewEvent,
+    StatusEvent,
+    UpdateEvent,
+    WorkerEvent,
+)
 from .uifonts import apply_ui_family
 from .update_checker import check_for_update
 
@@ -74,15 +83,21 @@ class ManipulatorApp:
         self.current_index: int = -1
         self.original_image: Image.Image | None = None
         self.font_path: str | None = None
-        self._preview_after_id: str | None = None
         self._preview_generation = 0
-        self._save_after_id: str | None = None
+        self._preview_debouncer = Debouncer(
+            self.root, config.preview_debounce_ms, self._refresh_preview
+        )
+        self._save_debouncer = Debouncer(
+            self.root,
+            config.settings_save_debounce_ms,
+            self._save_settings_now,
+        )
         self._processing = False
         self._cancel_event = threading.Event()
         self._applying_preset = False
         self._resetting = False
         self._update_check_running = False
-        self._events: queue.Queue = queue.Queue()
+        self._events: queue.Queue[WorkerEvent] = queue.Queue()
         self._window_icon: ImageTk.PhotoImage | None = None
 
         self._setup_window()
@@ -628,23 +643,14 @@ class ManipulatorApp:
     def _schedule_preview(self) -> None:
         """Schedule a debounced preview refresh."""
         self._preview_generation += 1
-        if self._preview_after_id is not None:
-            with contextlib.suppress(Exception):
-                self.root.after_cancel(self._preview_after_id)
-        self._preview_after_id = self.root.after(
-            config.preview_debounce_ms, self._refresh_preview
-        )
+        self._preview_debouncer.schedule()
 
     def _cancel_scheduled_preview(self) -> None:
         """Cancel a pending preview refresh, if any."""
-        if self._preview_after_id is not None:
-            with contextlib.suppress(Exception):
-                self.root.after_cancel(self._preview_after_id)
-            self._preview_after_id = None
+        self._preview_debouncer.cancel()
 
     def _refresh_preview(self) -> None:
         """Start rendering the current settings in a background thread."""
-        self._preview_after_id = None
         self._preview_generation += 1
         generation = self._preview_generation
 
@@ -679,9 +685,9 @@ class ManipulatorApp:
             rendered = manipulator.render(image)
         except Exception as exc:
             logger.exception("Preview failed")
-            self._events.put(("preview", generation, None, exc))
+            self._events.put(PreviewEvent(generation, None, exc))
             return
-        self._events.put(("preview", generation, rendered, None))
+        self._events.put(PreviewEvent(generation, rendered, None))
 
     def _on_preview_ready(self, generation: int, rendered, error) -> None:
         """Show a preview result unless a newer request superseded it."""
@@ -844,104 +850,98 @@ class ManipulatorApp:
 
     def _schedule_settings_save(self) -> None:
         """Schedule a debounced settings autosave."""
-        if self._save_after_id is not None:
-            with contextlib.suppress(Exception):
-                self.root.after_cancel(self._save_after_id)
-        self._save_after_id = self.root.after(
-            config.settings_save_debounce_ms, self._save_settings_now
-        )
+        self._save_debouncer.schedule()
 
     def _cancel_scheduled_settings_save(self) -> None:
         """Cancel a pending settings autosave, if any."""
-        if self._save_after_id is not None:
-            with contextlib.suppress(Exception):
-                self.root.after_cancel(self._save_after_id)
-            self._save_after_id = None
+        self._save_debouncer.cancel()
 
     def _save_settings_now(self) -> None:
         """Write the Saved settings to the Settings file immediately."""
-        self._save_after_id = None
         save_settings(self._get_settings_snapshot())
 
     def _get_settings_snapshot(self) -> dict:
         """Snapshot every persisted setting from the widgets."""
-        return {
-            "language": validate_language(self.language_var.get()),
-            "check_updates": bool(self.check_updates_var.get()),
-            "width": self._int_value(
+        snapshot = SettingsSnapshot(
+            language=validate_language(self.language_var.get()),
+            check_updates=bool(self.check_updates_var.get()),
+            width=self._int_value(
                 self.width_var,
                 config.default_width,
                 config.min_dimension,
                 config.max_dimension,
             ),
-            "height": self._int_value(
+            height=self._int_value(
                 self.height_var,
                 config.default_height,
                 config.min_dimension,
                 config.max_dimension,
             ),
-            "maintain_aspect": bool(self.maintain_aspect_var.get()),
-            "add_dimensions": bool(self.add_dimensions_var.get()),
-            "rotate_portrait": bool(self.rotate_portrait_var.get()),
-            "output_format": self.output_format_var.get(),
-            "jpeg_quality": self._int_value(
+            maintain_aspect=bool(self.maintain_aspect_var.get()),
+            add_dimensions=bool(self.add_dimensions_var.get()),
+            rotate_portrait=bool(self.rotate_portrait_var.get()),
+            output_format=self.output_format_var.get(),
+            jpeg_quality=self._int_value(
                 self.jpeg_quality_var,
                 config.default_jpeg_quality,
                 config.min_jpeg_quality,
                 config.max_jpeg_quality,
             ),
-            "text": self.text_var.get(),
-            "color": self.text_color,
-            "font_family": (
+            text=self.text_var.get(),
+            color=self.text_color,
+            font_family=(
                 self.font_family_var.get().strip() or config.default_font_family
             ),
-            "font_path": self.font_path,
-            "font_size": self._int_value(
+            font_path=self.font_path,
+            font_size=self._int_value(
                 self.font_size_var,
                 config.default_font_size,
                 config.min_font_size,
                 config.max_font_size,
             ),
-            "font_style": canonical_enum("font_style", self.font_style_var.get()),
-            "position": canonical_enum("position", self.position_var.get()),
-            "offset_up": self._int_value(
-                self.offset_up_var, config.default_offset_up, 0
-            ),
-            "offset_left": self._int_value(
+            font_style=canonical_enum("font_style", self.font_style_var.get()),
+            position=canonical_enum("position", self.position_var.get()),
+            offset_up=self._int_value(self.offset_up_var, config.default_offset_up, 0),
+            offset_left=self._int_value(
                 self.offset_left_var, config.default_offset_left, 0
             ),
-            "output_dir": self.output_dir_var.get().strip(),
-            "overwrite": bool(self.overwrite_var.get()),
-        }
+            output_dir=self.output_dir_var.get().strip(),
+            overwrite=bool(self.overwrite_var.get()),
+        )
+        return snapshot.to_settings()
 
     def _apply_saved_settings(self, saved: dict | None) -> None:
         """Apply loaded Saved settings to the widgets; ignore None."""
         if not saved:
             return
+        self._apply_settings(SettingsSnapshot.from_settings(saved))
 
-        self.language_var.set(validate_language(saved.get("language")))
-        self.check_updates_var.set(saved["check_updates"])
-        self.width_var.set(str(saved["width"]))
-        self.height_var.set(str(saved["height"]))
-        self.maintain_aspect_var.set(saved["maintain_aspect"])
-        self.add_dimensions_var.set(saved["add_dimensions"])
-        self.rotate_portrait_var.set(saved["rotate_portrait"])
-        self.output_format_var.set(saved["output_format"])
-        self.jpeg_quality_var.set(str(saved["jpeg_quality"]))
+    def _apply_settings(self, snapshot: SettingsSnapshot) -> None:
+        """Apply one settings snapshot to every widget."""
+        self.language_var.set(snapshot.language)
+        self.check_updates_var.set(snapshot.check_updates)
+        self.width_var.set(str(snapshot.width))
+        self.height_var.set(str(snapshot.height))
+        self.preset_var.set(tr("resize.custom"))
+        self.maintain_aspect_var.set(snapshot.maintain_aspect)
+        self.add_dimensions_var.set(snapshot.add_dimensions)
+        self.rotate_portrait_var.set(snapshot.rotate_portrait)
+        self.output_format_var.set(snapshot.output_format)
+        self.jpeg_quality_var.set(str(snapshot.jpeg_quality))
 
-        self.text_var.set(saved["text"])
-        self.text_color = saved["color"]
+        self.text_var.set(snapshot.text)
+        self.text_color = snapshot.color
         self.color_preview.config(bg=self.text_color)
-        self.position_var.set(translate_enum("position", saved["position"]))
-        self.offset_up_var.set(str(saved["offset_up"]))
-        self.offset_left_var.set(str(saved["offset_left"]))
-        self.font_family_var.set(saved["font_family"])
-        self.font_style_var.set(translate_enum("font_style", saved["font_style"]))
-        self.font_size_var.set(str(saved["font_size"]))
+        self.position_var.set(translate_enum("position", snapshot.position))
+        self.offset_up_var.set(str(snapshot.offset_up))
+        self.offset_left_var.set(str(snapshot.offset_left))
+        self.font_family_var.set(snapshot.font_family)
+        self.font_style_var.set(translate_enum("font_style", snapshot.font_style))
+        self.font_size_var.set(str(snapshot.font_size))
 
-        self.font_path = saved.get("font_path")
+        self.font_path = snapshot.font_path
         if self.font_path and not os.path.exists(self.font_path):
-            logger.warning(f"Saved font file is missing: {self.font_path}")
+            logger.warning("Saved font file is missing: %s", self.font_path)
             self.font_path = None
         if self.font_path:
             self.font_file_label.config(text=os.path.basename(self.font_path))
@@ -950,8 +950,8 @@ class ManipulatorApp:
             self.font_file_label.config(text=tr("text.system_default"))
             self.font_family_combo.config(state="normal")
 
-        self.output_dir_var.set(saved["output_dir"] or self._default_output_dir())
-        self.overwrite_var.set(saved["overwrite"])
+        self.output_dir_var.set(snapshot.output_dir or self._default_output_dir())
+        self.overwrite_var.set(snapshot.overwrite)
 
     def reset_settings(self) -> None:
         """Return all settings to their defaults after confirmation."""
@@ -967,7 +967,9 @@ class ManipulatorApp:
         self._resetting = True
         try:
             clear_settings()
-            self._reset_settings_widgets()
+            self._apply_settings(
+                SettingsSnapshot.defaults(language=detect_system_language())
+            )
         finally:
             self._resetting = False
         self.status_var.set(tr("status.settings_reset"))
@@ -977,36 +979,6 @@ class ManipulatorApp:
                 tr("menu.file.language.restart_message"),
                 parent=self.root,
             )
-
-    def _reset_settings_widgets(self) -> None:
-        """Reset all setting widgets to their defaults."""
-        self.width_var.set(str(config.default_width))
-        self.height_var.set(str(config.default_height))
-        self.preset_var.set(tr("resize.custom"))
-        self.language_var.set(detect_system_language())
-        self.check_updates_var.set(config.default_check_updates)
-        self.maintain_aspect_var.set(config.default_maintain_aspect_ratio)
-        self.add_dimensions_var.set(config.default_add_dimensions_to_filename)
-        self.rotate_portrait_var.set(config.default_rotate_portrait_to_landscape)
-        self.output_format_var.set(config.default_output_format)
-        self.jpeg_quality_var.set(str(config.default_jpeg_quality))
-
-        self.text_var.set(config.default_text)
-        self.text_color = config.default_color
-        self.color_preview.config(bg=self.text_color)
-        self.position_var.set(translate_enum("position", config.default_position))
-        self.offset_up_var.set(str(config.default_offset_up))
-        self.offset_left_var.set(str(config.default_offset_left))
-        self.font_family_var.set(config.default_font_family)
-        self.font_style_var.set(translate_enum("font_style", config.default_font_style))
-        self.font_size_var.set(str(config.default_font_size))
-
-        self.font_path = None
-        self.font_file_label.config(text=tr("text.system_default"))
-        self.font_family_combo.config(state="normal")
-
-        self.output_dir_var.set(self._default_output_dir())
-        self.overwrite_var.set(False)
 
     # --- Text settings widget handlers ---
 
@@ -1123,14 +1095,13 @@ class ManipulatorApp:
                 if self._cancel_event.is_set():
                     break
                 self._events.put(
-                    (
-                        "status",
+                    StatusEvent(
                         tr(
                             "status.processing_item",
                             index=index,
                             total=total,
                             name=os.path.basename(path),
-                        ),
+                        )
                     )
                 )
                 result = manipulator.process_path(path, output_dir, overwrite=overwrite)
@@ -1147,7 +1118,7 @@ class ManipulatorApp:
             errors.append(tr("status.batch_failed", error=exc))
         finally:
             self._events.put(
-                ("complete", success, total, errors, output_dir, overwrite)
+                CompleteEvent(success, total, errors, output_dir, overwrite)
             )
 
     def _poll_events(self) -> None:
@@ -1178,16 +1149,22 @@ class ManipulatorApp:
             except Exception:
                 logger.exception("Failed to apply event %r", event)
 
-    def _dispatch_event(self, event: tuple) -> None:
+    def _dispatch_event(self, event: WorkerEvent) -> None:
         """Apply a single worker/UI event on the UI thread."""
-        if event[0] == "status":
-            self.status_var.set(event[1])
-        elif event[0] == "complete":
-            self._on_processing_complete(*event[1:])
-        elif event[0] == "preview":
-            self._on_preview_ready(*event[1:])
-        elif event[0] == "update":
-            self._on_update_result(*event[1:])
+        if isinstance(event, StatusEvent):
+            self.status_var.set(event.text)
+        elif isinstance(event, CompleteEvent):
+            self._on_processing_complete(
+                event.success,
+                event.total,
+                event.errors,
+                event.output_dir,
+                event.overwrite,
+            )
+        elif isinstance(event, PreviewEvent):
+            self._on_preview_ready(event.generation, event.image, event.error)
+        elif isinstance(event, UpdateEvent):
+            self._on_update_result(event.manual, event.info, event.error)
 
     def _on_processing_complete(
         self,
@@ -1360,10 +1337,10 @@ class ManipulatorApp:
             info = check_for_update()
         except Exception as exc:
             logger.info("Update check failed: %s", exc)
-            self._events.put(("update", manual, None, str(exc)))
+            self._events.put(UpdateEvent(manual, None, str(exc)))
             return
 
-        self._events.put(("update", manual, info, None))
+        self._events.put(UpdateEvent(manual, info, None))
 
     def _on_update_result(self, manual: bool, info, error) -> None:
         """Show the result on the UI thread; automatic checks stay quiet."""
