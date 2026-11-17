@@ -167,3 +167,18 @@ class TestDetection:
         assert i18n.match_locale("de-DE") == "de"
         assert i18n.match_locale("sr_RS@latin") is None
         assert i18n.match_locale("") is None
+
+    def test_match_locale_handles_script_and_region(self):
+        assert i18n.match_locale("zh-Hans-CN") == "zh_CN"
+        assert i18n.match_locale("zh_Hans_CN") == "zh_CN"
+        assert i18n.match_locale("zh-Hans-SG") == "zh_CN"
+        assert i18n.match_locale("zh-Hant-TW") is None
+
+    def test_match_locale_handles_windows_names(self):
+        assert i18n.match_locale("Russian_Russia.1251") == "ru"
+        assert i18n.match_locale("Chinese (Simplified)_China.936") == "zh_CN"
+        assert i18n.match_locale("Portuguese_Brazil.1252") == "pt_BR"
+        assert i18n.match_locale("English_United States.1252") == "en"
+
+    def test_match_locale_rejects_unsupported_windows_language(self):
+        assert i18n.match_locale("Chinese (Traditional)_Taiwan.950") is None
