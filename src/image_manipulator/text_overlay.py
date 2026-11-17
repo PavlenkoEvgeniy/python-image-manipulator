@@ -255,12 +255,13 @@ class TextOverlay:
         """
         try:
             bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_width)
-            width = bbox[2] - bbox[0]
-            height = bbox[3] - bbox[1]
-            offset_x, offset_y = bbox[0], bbox[1]
         except Exception:
-            width, height = draw.textsize(text, font=font)
-            offset_x, offset_y = 0, 0
+            # Pillow 10+ has no draw.textsize(); font.getbbox() is the
+            # portable fallback and simply ignores the synthetic stroke.
+            bbox = font.getbbox(text)
+        width = bbox[2] - bbox[0]
+        height = bbox[3] - bbox[1]
+        offset_x, offset_y = bbox[0], bbox[1]
         return int(width), int(height), int(offset_x), int(offset_y)
 
     def calculate_position(
@@ -388,7 +389,7 @@ class TextOverlay:
         offset = int(shear * layer.height)
         layer = layer.transform(
             (layer.width + offset, layer.height),
-            Image.AFFINE,
+            Image.Transform.AFFINE,
             (1, shear, -shear * layer.height, 0, 1, 0),
         )
 

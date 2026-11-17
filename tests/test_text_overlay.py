@@ -1,6 +1,6 @@
 """Tests for the text overlay logic."""
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from image_manipulator.config import config
 from image_manipulator.text_overlay import TextOverlay
@@ -135,3 +135,24 @@ class TestFontResolution:
         font = overlay.get_font(20)
 
         assert overlay._renders_text(font, "   ") is True
+
+
+class TestMeasurementFallback:
+    """Pillow 10+ has no draw.textsize(), so bbox failures use font.getbbox()."""
+
+    def test_falls_back_to_the_font_bounding_box(self, monkeypatch):
+        overlay = TextOverlay(font_size=20)
+        font = overlay.get_font(20)
+        draw = ImageDraw.Draw(Image.new("RGB", (50, 50)))
+
+        def fail_textbbox(*args, **kwargs):
+            raise RuntimeError("textbbox is unavailable")
+
+        monkeypatch.setattr(ImageDraw.ImageDraw, "textbbox", fail_textbbox)
+
+        width, height, offset_x, offset_y = overlay.get_text_size(draw, "Hi", font)
+
+        assert width > 0
+        assert height > 0
+        assert isinstance(offset_x, int)
+        assert isinstance(offset_y, int)
