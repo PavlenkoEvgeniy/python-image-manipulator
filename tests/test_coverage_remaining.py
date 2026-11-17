@@ -74,14 +74,16 @@ class TestIconFrozenPaths:
         monkeypatch.setattr(sys, "frozen", True, raising=False)
         monkeypatch.setattr(sys, "_MEIPASS", "/bundle", raising=False)
 
-        assert icon.get_icon_path() == "/bundle/image_manipulator/icon.png"
+        expected = Path("/bundle") / "image_manipulator" / "icon.png"
+        assert icon.get_icon_path() == str(expected)
 
     def test_frozen_path_falls_back_to_executable_dir(self, monkeypatch):
         monkeypatch.setattr(sys, "frozen", True, raising=False)
         monkeypatch.delattr(sys, "_MEIPASS", raising=False)
         monkeypatch.setattr(sys, "executable", "/opt/app/image-manipulator")
 
-        assert icon.get_icon_path() == "/opt/app/image_manipulator/icon.png"
+        expected = Path("/opt/app") / "image_manipulator" / "icon.png"
+        assert icon.get_icon_path() == str(expected)
 
 
 class TestDebouncer:

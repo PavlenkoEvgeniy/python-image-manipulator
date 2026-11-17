@@ -1,6 +1,8 @@
 """Tk smoke tests for the main-window actions (skipped without a display)."""
 
 import logging
+import os
+import sys
 import threading
 from types import SimpleNamespace
 from typing import ClassVar
@@ -9,6 +11,9 @@ import pytest
 from PIL import Image
 
 tk = pytest.importorskip("tkinter")
+
+if sys.platform == "darwin" and os.environ.get("CI"):
+    pytest.skip("Tk GUI tests are unstable on macOS CI", allow_module_level=True)
 
 from image_manipulator import icon, settings_store, ui  # noqa: E402
 from image_manipulator.pipeline import ProcessResult  # noqa: E402

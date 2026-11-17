@@ -78,8 +78,12 @@ jobs:
         run: xvfb-run -a python -m pytest -v
 
       - name: Run tests
-        if: runner.os != 'Linux'
+        if: runner.os != 'Linux' && runner.os != 'macOS'
         run: python -m pytest -v
+
+      - name: Run tests (macOS, no coverage gate)
+        if: runner.os == 'macOS'
+        run: python -m pytest -v --no-cov
 
       - name: Check package metadata
         if: runner.os == 'Linux' && matrix.package

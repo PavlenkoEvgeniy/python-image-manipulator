@@ -110,7 +110,7 @@ class TestLinuxPackageKind:
         return str(path)
 
     def test_debian_family(self, tmp_path):
-        path = self._os_release(tmp_path, "ID=ubuntu\nID_LIKE=debian\n")
+        path = self._os_release(tmp_path, "NAME=Test\nID=ubuntu\nID_LIKE=debian\n")
 
         assert (
             update_checker.linux_package_kind(os_release=path, which=lambda _: None)
