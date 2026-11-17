@@ -197,11 +197,12 @@ def save_settings(settings: dict, path: Optional[str] = None) -> bool:
         True on success, False if writing failed (already logged).
     """
     target = path or get_settings_path()
+    target_dir = os.path.dirname(target) or os.curdir
     payload = {"version": SETTINGS_VERSION, "settings": settings}
     try:
-        os.makedirs(os.path.dirname(target), exist_ok=True)
+        os.makedirs(target_dir, exist_ok=True)
         fd, tmp = tempfile.mkstemp(
-            prefix=".settings-", suffix=".tmp", dir=os.path.dirname(target)
+            prefix=".settings-", suffix=".tmp", dir=target_dir
         )
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:

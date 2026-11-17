@@ -45,6 +45,14 @@ class TestRoundTrip:
         assert settings_store.save_settings(settings, path=path)
         assert settings_store.load_settings(path=path) == settings
 
+    def test_bare_filename_target(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        settings = _full_settings()
+
+        assert settings_store.save_settings(settings, path="settings.json")
+        assert (tmp_path / "settings.json").is_file()
+        assert settings_store.load_settings(path="settings.json") == settings
+
     def test_file_is_versioned_json(self, tmp_path):
         path = tmp_path / "settings.json"
         settings_store.save_settings(_full_settings(), path=str(path))
