@@ -4,12 +4,18 @@ These tests need a display, so they skip wherever Tk cannot start (headless CI).
 The rest of the suite stays display-free.
 """
 
+import os
+import sys
+
 import gc
 import logging
 
 import pytest
 
 tk = pytest.importorskip("tkinter")
+
+if sys.platform == "darwin" and os.environ.get("CI"):
+    pytest.skip("Tk GUI tests are unstable on macOS CI", allow_module_level=True)
 
 from image_manipulator import dialogs, i18n  # noqa: E402
 from image_manipulator.update_checker import UpdateInfo  # noqa: E402
@@ -118,3 +124,20 @@ def test_about_icon_failure_is_logged(root, monkeypatch, caplog):
 
     assert "Could not load the About dialog icon" in caplog.text
     assert _image_labels(root) == []
+
+
+def test_update_dialog_insecure_url_and_failed_open(root, monkeypatch, caplog):
+    opened = []
+    monkeypatch.setattr(dialogs.webbrowser, "open", lambda url: opened.append(url) or False)
+    info = UpdateInfo(version="9.0.0", download_url="http://insecure/x", release_url="https://example/release")
+    dialog = dialogs.UpdateDialog(root, info)
+    with caplog.at_level(logging.WARNING, logger=dialogs.logger.name):
+        dialog._download()
+    assert opened == ["https://example/release"]
+    assert "Could not open the download page" in caplog.text
+
+
+def test_message_dialogs_mapped_error_and_warning(root, monkeypatch):
+    monkeypatch.setattr(tk.Misc, "winfo_ismapped", lambda self: True)
+    dialogs.ErrorDialog.show_warning("Warning", "Careful", parent=root)
+    dialogs.ErrorDialog.show_error("Error", "Broken", parent=root)

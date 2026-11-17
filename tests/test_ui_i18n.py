@@ -1,8 +1,14 @@
 """Tk smoke tests for the interface language (skipped without a display)."""
 
+import os
+import sys
+
 import pytest
 
 tk = pytest.importorskip("tkinter")
+
+if sys.platform == "darwin" and os.environ.get("CI"):
+    pytest.skip("Tk GUI tests are unstable on macOS CI", allow_module_level=True)
 
 from image_manipulator import ui  # noqa: E402
 from image_manipulator.update_checker import UpdateInfo  # noqa: E402

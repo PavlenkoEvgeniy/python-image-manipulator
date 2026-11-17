@@ -57,8 +57,13 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --cov=image_manipulator --cov-branch --cov-report=term-missing"
 
 [tool.coverage.run]
 source = ["image_manipulator"]
+branch = true
 omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
